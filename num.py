@@ -6,8 +6,8 @@ class Number:
     self.value = value
     self.op = op if op != None else operation.ConstantOp(self)
   
-  def derivative_wrt(self, var):
-    return self.op.derivative_wrt(var)
+  def forward_derivative(self, var):
+    return self.op.forward_derivative(var)
 
   def __add__(self, other):
     if isinstance(other, Number):
@@ -81,6 +81,13 @@ class Number:
     else:
       return NotImplemented
 
+  def __rpow__(self, other):
+    if isinstance(other, Number):
+      return Number(other ** self.value, operation.PowOp(other, self))
+    elif isinstance(other, float) or isinstance(other, int):
+      return Number(other ** self.value, operation.PowOp(Number(other), self))
+    else:
+      return NotImplemented
 
   def __neg__(self):
     return Number(-self.value, operation.NegOp(self))
