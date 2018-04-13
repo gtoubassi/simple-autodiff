@@ -18,9 +18,7 @@ class Number:
       return NotImplemented
 
   def __radd__(self, other):
-    if isinstance(other, Number):
-      return Number(other.value + self.value, operation.AddOp(other, self))
-    elif isinstance(other, float) or isinstance(other, int):
+    if isinstance(other, float) or isinstance(other, int):
       return Number(other + self.value, operation.AddOp(Number(other), self))
     else:
       return NotImplemented
@@ -34,9 +32,7 @@ class Number:
       return NotImplemented
 
   def __rsub__(self, other):
-    if isinstance(other, Number):
-      return Number(other.value - self.value, operation.SubOp(other, self))
-    elif isinstance(other, float) or isinstance(other, int):
+    if isinstance(other, float) or isinstance(other, int):
       return Number(other - self.value, operation.SubOp(Number(other), self))
     else:
       return NotImplemented
@@ -50,9 +46,7 @@ class Number:
       return NotImplemented
 
   def __rmul__(self, other):
-    if isinstance(other, Number):
-      return Number(other.value * self.value, operation.MulOp(other, self))
-    elif isinstance(other, float) or isinstance(other, int):
+    if isinstance(other, float) or isinstance(other, int):
       return Number(other * self.value, operation.MulOp(Number(other), self))
     else:
       return NotImplemented
@@ -66,9 +60,7 @@ class Number:
       return NotImplemented
 
   def __rtruediv__(self, other):
-    if isinstance(other, Number):
-      return Number(other.value / self.value, operation.DivOp(other, self))
-    elif isinstance(other, float) or isinstance(other, int):
+    if isinstance(other, float) or isinstance(other, int):
       return Number(other / self.value, operation.DivOp(Number(other), self))
     else:
       return NotImplemented
@@ -82,9 +74,7 @@ class Number:
       return NotImplemented
 
   def __rpow__(self, other):
-    if isinstance(other, Number):
-      return Number(other ** self.value, operation.PowOp(other, self))
-    elif isinstance(other, float) or isinstance(other, int):
+    if isinstance(other, float) or isinstance(other, int):
       return Number(other ** self.value, operation.PowOp(Number(other), self))
     else:
       return NotImplemented
