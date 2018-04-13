@@ -1,3 +1,4 @@
+import num
 
 class AddOp:
     
@@ -76,7 +77,7 @@ class ConstantOp:
     self.value = value
 
   def forward_derivative(self, var):
-    return 1 if var == self.value else 0
+    return num.Number(1) if var == self.value else num.Number(0)
 
   def __str__(self):
     return str(self.value)
