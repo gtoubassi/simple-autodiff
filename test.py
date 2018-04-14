@@ -119,15 +119,19 @@ def test_derivative(func, low_range, high_range):
     autodiff_fwd = eval_number.forward_derivative(number_x)
     test_assert(abs(finite_diff_derivative - autodiff_fwd.value) < 1e-3)
     
+    # Autodiff fwd mode
+    autodiff_fwd = eval_number.bwd(number_x)
+    test_assert(abs(finite_diff_derivative - autodiff_fwd) < 1e-3)
+    
 def test_simple_derivative():
   test_derivative(func_constant, -2.0, 2.0)
-  test_derivative(func_linear, -2.0, 2.0)
   test_derivative(func_add, -2.0, 2.0)
   test_derivative(func_sub, -2.0, 2.0)
   test_derivative(func_pow, -2.0, 2.0)
   test_derivative(func_mul, -2.0, 2.0)
   test_derivative(func_div, -2.0, 2.0)
   test_derivative(func_neg, -2.0, 2.0)
+  test_derivative(func_linear, -2.0, 2.0)
   test_derivative(func_add_chain, -2.0, 2.0)
   test_derivative(func_sub_chain, -2.0, 2.0)
   test_derivative(func_pow_chain, -2.0, 2.0)
