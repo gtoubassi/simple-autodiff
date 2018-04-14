@@ -8,6 +8,9 @@ class Number:
     self.children = []
     self.grad_value = None
   
+  def __eq__(self, other):
+    return self.value == other.value
+  
   def forward_autodiff(self, var):
     Number.opcount = 0
     self._reset_grad()

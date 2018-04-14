@@ -124,6 +124,7 @@ def main():
 
   test_simple()
   test_simple_derivative()
+
   if num_tests > num_passed:
     print("%d FAILED!" % (num_tests - num_passed))
   print("%d / %d passed" % (num_passed, num_tests))
