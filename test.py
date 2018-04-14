@@ -7,6 +7,8 @@ def test_assert(cond, message=None):
   global num_tests, num_passed
 
   num_tests += 1
+  assert(cond)
+    
   if cond:
     num_passed += 1
   elif message is not None:
@@ -34,32 +36,6 @@ def test_simple():
   test_assert(81 == (Number(3) ** 4).value, "3^4 == 81")
 
   test_assert(-17 == (-Number(17)).value, "-17")
-
-def test_op_log():
-  test_assert('(+ 1n 2n)' == str((Number(1) + Number(2)).op))
-  test_assert('(+ 1n 2n)' == str((1 + Number(2)).op))
-  test_assert('(+ 1n 2n)' == str((Number(1) + 2).op))
-
-  test_assert('(- 1n 2n)' == str((Number(1) - Number(2)).op))
-  test_assert('(- 1n 2n)' == str((1 - Number(2)).op))
-  test_assert('(- 1n 2n)' == str((Number(1) - 2).op))
-
-  test_assert('(* 2n 3n)' == str((Number(2) * Number(3)).op))
-  test_assert('(* 2n 3n)' == str((2 * Number(3)).op))
-  test_assert('(* 2n 3n)' == str((Number(2) * 3).op))
-
-  test_assert('(/ 18n 5n)' == str((Number(18) / Number(5)).op))
-  test_assert('(/ 18n 5n)' == str((18 / Number(5)).op))
-  test_assert('(/ 18n 5n)' == str((Number(18) / 5).op))
-
-  test_assert('(^ 3n 4n)' == str((Number(3) ** Number(4)).op))
-  test_assert('(^ 3n 4n)' == str((3 ** Number(4)).op))
-  test_assert('(^ 3n 4n)' == str((Number(3) ** 4).op))
-
-  test_assert('(- 3n)' == str((-Number(3)).op))
-
-  test_assert('(* (+ 1n 2n) 3n)' == str(((Number(1) + Number(2)) * Number(3)).op))
-  test_assert('(- (- (/ (* (+ 1n 2n) 3n) 4n) 5n))' == str((-((Number(1) + Number(2)) * Number(3) / Number(4) - Number(5))).op))
 
 def func_constant(x):
   return 3
@@ -115,14 +91,18 @@ def test_derivative(func, low_range, high_range):
     # Finite difference
     finite_diff_derivative = (func(x + 1e-7) - eval_native) / 1e-7
     
-    # Autodiff fwd mode
-    autodiff_fwd = eval_number.forward_derivative(number_x)
-    test_assert(abs(finite_diff_derivative - autodiff_fwd.value) < 1e-3)
+    # Forward mode autodiff
+    forward_deriv = eval_number.forward_autodiff(number_x)
+    forward_ops = Number.opcount
+    test_assert(abs(finite_diff_derivative - forward_deriv) < 1e-3)
     
-    # Autodiff fwd mode
-    autodiff_fwd = eval_number.bwd(number_x)
-    test_assert(abs(finite_diff_derivative - autodiff_fwd) < 1e-3)
-    
+    # Reverse mode autodiff
+    reverse_deriv = eval_number.reverse_autodiff(number_x)
+    reverse_ops = Number.opcount
+    test_assert(abs(finite_diff_derivative - reverse_deriv) < 1e-3)
+
+    test_assert(reverse_ops <= forward_ops)
+
 def test_simple_derivative():
   test_derivative(func_constant, -2.0, 2.0)
   test_derivative(func_add, -2.0, 2.0)
@@ -143,7 +123,6 @@ def main():
   global num_tests, num_passed
 
   test_simple()
-  test_op_log()
   test_simple_derivative()
   if num_tests > num_passed:
     print("%d FAILED!" % (num_tests - num_passed))

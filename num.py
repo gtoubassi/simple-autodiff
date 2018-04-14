@@ -1,43 +1,56 @@
-import operation
 
 class Number:
-    
-  def __init__(self, value, op = None):
+  opcount = 0
+
+  def __init__(self, value):
     self.value = value
-    self.op = op if op != None else operation.ConstantOp(self)
     self.parents = []
     self.children = []
     self.grad_value = None
   
-  def forward_derivative(self, var):
-    return self.op.forward_derivative(var)
-  
-  def fwd(self, var):
+  def forward_autodiff(self, var):
+    Number.opcount = 0
+    self._reset_grad()
+    var._reset_grad()
     var.grad_value = 1
-    return self.dofwd()
+    z = self._do_forward_autodiff()
+    return z
   
-  def bwd(self, var):
+  def reverse_autodiff(self, var):
+    Number.opcount = 0
+    self._reset_grad()
+    var._reset_grad()
     self.grad_value = 1
-    return var.dobwd()
+    z = var._do_reverse_autodiff()
+    return z
   
-  def dofwd(self):
+  def _reset_grad(self):
+    self.grad_value = None
+    for partial, parent in self.parents:
+      parent._reset_grad()
+
+  def _do_forward_autodiff(self):
+    # Strictly speaking forward pass doesn't need caching since
+    # we are executing in a non repetitive order
     if self.grad_value is None:
+      Number.opcount += 1
       self.grad_value = 0
-      for parent in self.parents:
-        self.grad_value += parent[0] * parent[1].dofwd()
+      for partial, parent in self.parents:
+        self.grad_value += partial * parent._do_forward_autodiff()
     
     return self.grad_value
     
-  def dobwd(self):
+  def _do_reverse_autodiff(self):
     if self.grad_value is None:
+      Number.opcount += 1
       self.grad_value = 0
-      for child in self.children:
-        self.grad_value += child[0] * child[1].dobwd()
-    
+      for partial, child in self.children:
+        self.grad_value += partial * child._do_reverse_autodiff()
+  
     return self.grad_value
     
   def add(self, other):
-    z = Number(self.value + other.value, operation.AddOp(self, other))
+    z = Number(self.value + other.value)
     z.parents.append((1.0, self))
     z.parents.append((1.0, other))
     self.children.append((1.0, z))
@@ -45,7 +58,7 @@ class Number:
     return z
 
   def sub(self, other):
-    z = Number(self.value - other.value, operation.SubOp(self, other))
+    z = Number(self.value - other.value)
     z.parents.append((1.0, self))
     z.parents.append((-1.0, other))
     self.children.append((1.0, z))
@@ -53,7 +66,7 @@ class Number:
     return z
 
   def mul(self, other):
-    z = Number(self.value * other.value, operation.MulOp(self, other))
+    z = Number(self.value * other.value)
     z.parents.append((other.value, self))
     z.parents.append((self.value, other))
     self.children.append((other.value, z))
@@ -61,7 +74,7 @@ class Number:
     return z
     
   def truediv(self, other):
-    z = Number(self.value / other.value, operation.DivOp(self, other))
+    z = Number(self.value / other.value)
     partial_z_wrt_self = 1 / other.value
     partial_z_wrt_other = -self.value / other.value**2
     z.parents.append((partial_z_wrt_self, self))
@@ -71,14 +84,14 @@ class Number:
     return z
     
   def pow(self, other):
-    z = Number(self.value ** other.value, operation.PowOp(self, other))
+    z = Number(self.value ** other.value)
     partial_z_wrt_self = other.value * self.value ** (other.value - 1)
     z.parents.append((partial_z_wrt_self, self))
     self.children.append((partial_z_wrt_self, z))
     return z
     
   def neg(self):
-    z = Number(-self.value, operation.NegOp(self))
+    z = Number(-self.value)
     z.parents.append((-1.0, self))
     self.children.append((-1, z))
     return z
