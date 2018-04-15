@@ -17,18 +17,35 @@ class Matrix:
     elif isinstance(initializer, float) or isinstance(initializer, int):
       self.data = [initializer] * (rows * cols)
 
-  def reverse_autodiff(self, wrt):
+  def reverse_autodiff(self, var):
     Number.opcount = 0
     self.apply(lambda x: x._reset_grad())
-    wrt.apply(lambda x: x._reset_grad())
+    var.apply(lambda x: x._reset_grad())
     for i in range(len(self.data)):
       self.data[i].grad_value = 1
-    wrt.apply(lambda x: x._do_reverse_autodiff())
-    z = Matrix(wrt.rows, 1)
+    var.apply(lambda x: x._do_reverse_autodiff())
+    z = Matrix(var.rows, 1)
     # Todo, we are assuming a true gradient, no jacobians here
     for r in range(z.rows):
-      z.data[r * z.cols + 0] = wrt.get(r, 0)._do_reverse_autodiff()
+      z.data[r * z.cols + 0] = var.get(r, 0).grad_value
     return z
+
+  def forward_autodiff(self, var):
+    Number.opcount = 0
+    z = Matrix(var.rows, 1)
+    # Todo, we are assuming a true gradient, no jacobians here
+    for r in range(z.rows):
+      self.apply(lambda x: x._reset_grad())
+      var.apply(lambda x: x._reset_grad())
+      var.data[r * z.cols + 0].grad_value = 1
+      z.data[r * z.cols + 0] = self.get(0, 0)._do_forward_autodiff()
+    return z
+    
+  def copy(self):
+    m = Matrix(self.rows, self.cols)
+    for i in range(len(self.data)):
+      m.data[i] = self.data[i]
+    return m
 
   def apply(self, func):
     for i in range(len(self.data)):

@@ -1,5 +1,6 @@
 from num import Number
 from matrix import Matrix
+from finite_diff import finite_difference
 
 num_tests = 0
 num_passed = 0
@@ -90,7 +91,7 @@ def test_derivative(func, low_range, high_range):
     test_assert(eval_native == eval_number.value)
     
     # Finite difference
-    finite_diff_derivative = (func(x + 1e-7) - eval_native) / 1e-7
+    finite_diff_derivative = finite_difference(func, [x])
     
     # Forward mode autodiff
     forward_deriv = eval_number.forward_autodiff(number_x)
@@ -130,16 +131,24 @@ def func_simple_dot(x):
 def test_gradient():
   x = Matrix(2, 1, [[.5], [1.5]])
   eval_native = func_simple_dot(x)
-  delta = Matrix(2, 1, [[1e-7], [0]])
-  finite_diff1 = func_simple_dot(x.add(delta)).sub(func_simple_dot(x))
-  delta = Matrix(2, 1, [[0], [1e-7]])
-  finite_diff2 = func_simple_dot(x.add(delta)).sub(func_simple_dot(x))
-  finite_diff = Matrix(2, 1, [[finite_diff1.get(0, 0)], [finite_diff2.get(0, 0)]]).scalarmul(1e7)
+  
+  finite_diff = finite_difference(func_simple_dot, [x])
   
   x_number = convert_to_number(x)
   eval_number = func_simple_dot(x_number)
+  
+  # Forward mode autodiff  
+  forward_grad = eval_number.forward_autodiff(x_number)
+  forward_ops = Number.opcount
+  test_assert(finite_diff.compare(forward_grad, 1e-3))
+  
+  # Reverse mode autodiff  
   reverse_grad = eval_number.reverse_autodiff(x_number)
+  reverse_ops = Number.opcount
   test_assert(finite_diff.compare(reverse_grad, 1e-3))
+  
+  test_assert(reverse_ops <= forward_ops)
+  
 
 def main():
   global num_tests, num_passed

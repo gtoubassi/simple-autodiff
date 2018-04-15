@@ -31,11 +31,6 @@ class Number:
     z = var._do_reverse_autodiff()
     return z
   
-  def _reset_grad(self):
-    self.grad_value = None
-    for partial, parent in self.parents:
-      parent._reset_grad()
-
   def _do_forward_autodiff(self):
     # Strictly speaking forward pass doesn't need caching since
     # we are executing in a non repetitive order
@@ -55,6 +50,11 @@ class Number:
         self.grad_value += partial * child._do_reverse_autodiff()
   
     return self.grad_value
+
+  def _reset_grad(self):
+    self.grad_value = None
+    for partial, parent in self.parents:
+      parent._reset_grad()
     
   def add(self, other):
     z = Number(self.value + other.value)
