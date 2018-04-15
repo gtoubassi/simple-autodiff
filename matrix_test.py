@@ -53,6 +53,12 @@ def test_hadamard():
   m1hadamardm2_correct = Matrix(3, 2, [[7, 18], [33, 52], [75, 102]])
   test_assert(m1hadamardm2.compare(m1hadamardm2_correct))
 
+def test_scalarmul():
+  m = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
+  m = m.scalarmul(.5)
+  correct = Matrix(3, 2, [[.5, 1], [1.5, 2], [2.5, 3]])
+  test_assert(m.compare(correct))
+
 def test_matmul():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
   m2 = Matrix(2, 3, [[7, 8, 9], [10, 11, 12]])
@@ -88,6 +94,7 @@ def main():
   test_add()
   test_sub()
   test_hadamard()
+  test_scalarmul()
   test_matmul()
   test_transpose()
   test_with_numbers()

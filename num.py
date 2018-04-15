@@ -8,9 +8,6 @@ class Number:
     self.children = []
     self.grad_value = None
   
-  def __eq__(self, other):
-    return self.value == other.value
-  
   def forward_autodiff(self, var):
     Number.opcount = 0
     self._reset_grad()
@@ -99,6 +96,9 @@ class Number:
     self.children.append((-1, z))
     return z
     
+  def abs(self):
+    return self if self.value >= 0 else self.neg()
+    
   def __add__(self, other):
     other = other if isinstance(other, Number) else Number(other)
     return self.add(other)
@@ -142,6 +142,27 @@ class Number:
   def __neg__(self):
     return self.neg()
   
+  def __abs__(self):
+    return self.abs()
+
+  def __eq__(self, other):
+    return self.value == other.value
+  
+  def __lt__(self, other):
+    other = other.value if isinstance(other, Number) else other
+    return self.value < other
+      
+  def __le__(self, other):
+    other = other.value if isinstance(other, Number) else other
+    return self.value <= other
+  
+  def __gt__(self, other):
+    other = other.value if isinstance(other, Number) else other
+    return self.value > other
+      
+  def __ge__(self, other):
+    other = other.value if isinstance(other, Number) else other
+    return self.value >= other
+      
   def __str__(self):
     return str(self.value) + 'n'
-

@@ -1,4 +1,5 @@
 from num import Number
+from matrix import Matrix
 
 num_tests = 0
 num_passed = 0
@@ -118,12 +119,34 @@ def test_simple_derivative():
   test_derivative(func_mul_chain, -2.0, 2.0)
   test_derivative(func_div_chain, -2.0, 2.0)
   test_derivative(func_neg_chain, -2.0, 2.0)
+
+def convert_to_number(m):
+  return Matrix(m.rows, m.cols, lambda r, c: Number(m.get(r, c)))
+
+def func_simple_dot(x):
+  p = Matrix(2, 1, [[3.0], [4.0]])
+  return x.transpose().matmul(p)
+
+def test_gradient():
+  x = Matrix(2, 1, [[.5], [1.5]])
+  eval_native = func_simple_dot(x)
+  delta = Matrix(2, 1, [[1e-7], [0]])
+  finite_diff1 = func_simple_dot(x.add(delta)).sub(func_simple_dot(x))
+  delta = Matrix(2, 1, [[0], [1e-7]])
+  finite_diff2 = func_simple_dot(x.add(delta)).sub(func_simple_dot(x))
+  finite_diff = Matrix(2, 1, [[finite_diff1.get(0, 0)], [finite_diff2.get(0, 0)]]).scalarmul(1e7)
   
+  x_number = convert_to_number(x)
+  eval_number = func_simple_dot(x_number)
+  reverse_grad = eval_number.reverse_autodiff(x_number)
+  test_assert(finite_diff.compare(reverse_grad, 1e-3))
+
 def main():
   global num_tests, num_passed
 
   test_simple()
   test_simple_derivative()
+  test_gradient()
 
   if num_tests > num_passed:
     print("%d FAILED!" % (num_tests - num_passed))

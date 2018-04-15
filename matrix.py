@@ -1,3 +1,5 @@
+from num import Number
+
 class Matrix:
   
   def __init__(self, rows, cols, initializer = 0.0):
@@ -15,11 +17,27 @@ class Matrix:
     elif isinstance(initializer, float) or isinstance(initializer, int):
       self.data = [initializer] * (rows * cols)
 
-  def compare(self, other):
+  def reverse_autodiff(self, wrt):
+    Number.opcount = 0
+    self.apply(lambda x: x._reset_grad())
+    wrt.apply(lambda x: x._reset_grad())
+    for i in range(len(self.data)):
+      self.data[i].grad_value = 1
+    wrt.apply(lambda x: x._do_reverse_autodiff())
+    z = Matrix(wrt.rows, 1)
+    for r in range(z.rows):
+      z.data[r * z.cols + 0] = wrt.get(r, 0)._do_reverse_autodiff()
+    return z
+
+  def apply(self, func):
+    for i in range(len(self.data)):
+      func(self.data[i])
+    
+  def compare(self, other, tolerance = 0.0):
     if self.rows != other.rows or self.cols != other.cols:
       return False
     for i in range(len(self.data)):
-      if self.data[i] != other.data[i]:
+      if abs(self.data[i] - other.data[i]) > tolerance:
         return False
     return True
       
@@ -45,6 +63,12 @@ class Matrix:
     m = Matrix(self.rows, self.cols)
     for i in range(len(self.data)):
       m.data[i] = self.data[i] * other.data[i]
+    return m
+
+  def scalarmul(self, scalar):
+    m = Matrix(self.rows, self.cols)
+    for i in range(len(self.data)):
+      m.data[i] = self.data[i] * scalar
     return m
 
   def matmul(self, other):
