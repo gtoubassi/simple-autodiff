@@ -25,6 +25,7 @@ class Matrix:
       self.data[i].grad_value = 1
     wrt.apply(lambda x: x._do_reverse_autodiff())
     z = Matrix(wrt.rows, 1)
+    # Todo, we are assuming a true gradient, no jacobians here
     for r in range(z.rows):
       z.data[r * z.cols + 0] = wrt.get(r, 0)._do_reverse_autodiff()
     return z

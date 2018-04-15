@@ -1,3 +1,10 @@
+# TODO
+#
+# 1. Move auto diff code into autodiff.py
+# 2. Handle jacobians as well
+# 3. Centralize finite diff code (into autodiff?)
+# 4. Support for exp(Number) which means fixing pow's autodiff.  The full monty is
+#   https://math.stackexchange.com/questions/210915/derivative-of-a-function-raised-to-the-power-of-x
 
 class Number:
   opcount = 0
