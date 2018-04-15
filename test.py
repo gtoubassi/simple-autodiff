@@ -1,4 +1,4 @@
-from num import Number
+from number import Number
 from matrix import Matrix
 from finite_diff import finite_difference
 

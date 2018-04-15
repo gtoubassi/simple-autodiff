@@ -1,4 +1,4 @@
-from num import Number
+from number import Number
 
 class Matrix:
   

@@ -1,5 +1,5 @@
 from matrix import Matrix
-from num import Number
+from number import Number
 
 num_tests = 0
 num_passed = 0
