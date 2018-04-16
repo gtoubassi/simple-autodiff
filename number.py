@@ -16,7 +16,6 @@ class Number:
     self.parents = []
     self.children = []
     self.grad_value = None
-    #self.is_variable_of_interest = None
   
   def forward_autodiff(self, var):
     Number.opcount = 0
@@ -59,15 +58,6 @@ class Number:
     for partial, parent in self.parents:
       parent._reset_grad()
   
-  #def _is_variable_of_interest(self):
-  #  if self.is_variable_of_interest is None:
-  #    self.is_variable_of_interest = False
-  #    for partial, parent in self.parents:
-  #      if parent._is_variable_of_interest():
-  #        self.is_variable_of_interest = True
-  #        break;
-  #  return self.is_variable_of_interest
-    
   def add(self, other):
     z = Number(self.value + other.value)
     z.parents.append((1.0, self))
