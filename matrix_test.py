@@ -13,7 +13,7 @@ def test_assert(cond, message=None):
   if cond:
     num_passed += 1
   elif message is not None:
-      print("Failure:", message)
+    print("Failure:", message)
 
 def test_initialization():
   m = Matrix(3, 2)

@@ -1,6 +1,7 @@
 from number import Number
 from matrix import Matrix
 from finite_diff import finite_difference
+import math
 
 num_tests = 0
 num_passed = 0
@@ -81,6 +82,12 @@ def func_div_chain(x):
 def func_neg_chain(x):
   return -(x*x + 1/(x+10))
 
+def func_exp(x):
+  return math.exp(1)**(-x)
+
+def func_sigmoid(x):
+  return 1.0 / (1.0 + math.exp(1)**(-x))
+
 def test_derivative(func, low_range, high_range):
   for i in range(10):
     x = low_range + i * (high_range - low_range) / 10
@@ -120,42 +127,83 @@ def test_simple_derivative():
   test_derivative(func_mul_chain, -2.0, 2.0)
   test_derivative(func_div_chain, -2.0, 2.0)
   test_derivative(func_neg_chain, -2.0, 2.0)
+  test_derivative(func_exp, -2.0, 2.0)
+  test_derivative(func_sigmoid, -2.0, 2.0)
 
 def convert_to_number(m):
   return Matrix(m.rows, m.cols, lambda r, c: Number(m.get(r, c)))
 
-def func_simple_dot(x):
-  p = Matrix(2, 1, [[3.0], [4.0]])
+def func_gradient_const(x):
+  p = Matrix(3, 1, [[0], [0], [0]])
+  b = Matrix(1, 1, [[12]])
+  return x.transpose().matmul(p).add(b)
+
+def func_gradient_dot(x):
+  p = Matrix(3, 1, [[3.0], [4.0], [5.0]])
   return x.transpose().matmul(p)
 
-def test_gradient():
-  x = Matrix(2, 1, [[.5], [1.5]])
-  eval_native = func_simple_dot(x)
+def func_gradient_matmul(x):
+  p = Matrix(3, 1, [[3.0], [4.0], [5.0]])
+  z = x.matmul(p.transpose()).reduce_sum()
+  return Matrix(1,1,[[z]])
+
+def func_gradient_hadamard(x):
+  p = Matrix(3, 1, [[3.0], [4.0], [5.0]])
+  z = x.hadamard(p).reduce_sum()
+  return Matrix(1,1,[[z]])
+
+def func_gradient_square(x):
+  z = x.hadamard(x).reduce_sum()
+  return Matrix(1,1,[[z]])
+
+def func_gradient_scalarmul(x):
+  z = x.scalarmul(12).reduce_sum()
+  return Matrix(1,1,[[z]])
+
+def test_gradient(func, low_range, high_range):
+  data = [[0],[0],[0]]
+  for i in range(3):
+    data[0][0] = low_range + i * (high_range - low_range) / 3
+    for j in range(3):
+      data[1][0] = low_range + j * (high_range - low_range) / 3
+      for k in range(3):
+        data[2][0] = low_range + k * (high_range - low_range) / 3
+        
+        x = Matrix(3, 1, data)
+        
+        eval_native = func(x)
   
-  finite_diff = finite_difference(func_simple_dot, [x])
+        finite_diff = finite_difference(func, [x])
   
-  x_number = convert_to_number(x)
-  eval_number = func_simple_dot(x_number)
+        x_number = convert_to_number(x)
+        eval_number = func(x_number)
+        
+        # Forward mode autodiff  
+        forward_grad = eval_number.forward_autodiff(x_number)
+        forward_ops = Number.opcount
+        test_assert(finite_diff.compare(forward_grad, 1e-3))
   
-  # Forward mode autodiff  
-  forward_grad = eval_number.forward_autodiff(x_number)
-  forward_ops = Number.opcount
-  test_assert(finite_diff.compare(forward_grad, 1e-3))
+        # Reverse mode autodiff  
+        reverse_grad = eval_number.reverse_autodiff(x_number)
+        reverse_ops = Number.opcount
+        test_assert(finite_diff.compare(reverse_grad, 1e-3))
   
-  # Reverse mode autodiff  
-  reverse_grad = eval_number.reverse_autodiff(x_number)
-  reverse_ops = Number.opcount
-  test_assert(finite_diff.compare(reverse_grad, 1e-3))
+        test_assert(reverse_ops <= forward_ops)
   
-  test_assert(reverse_ops <= forward_ops)
-  
+def test_gradients():
+  test_gradient(func_gradient_const, -1.0, 2.0)
+  test_gradient(func_gradient_dot, -1.0, 2.0)
+  test_gradient(func_gradient_matmul, -1.0, 2.0)
+  test_gradient(func_gradient_hadamard, -1.0, 2.0)
+  test_gradient(func_gradient_square, -1.0, 2.0)
+  test_gradient(func_gradient_scalarmul, -1.0, 2.0)
 
 def main():
   global num_tests, num_passed
 
   test_simple()
   test_simple_derivative()
-  test_gradient()
+  test_gradients()
 
   if num_tests > num_passed:
     print("%d FAILED!" % (num_tests - num_passed))

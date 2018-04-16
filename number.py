@@ -1,3 +1,5 @@
+import math
+
 # TODO
 #
 # 1. Move auto diff code into autodiff.py
@@ -14,6 +16,7 @@ class Number:
     self.parents = []
     self.children = []
     self.grad_value = None
+    #self.is_variable_of_interest = None
   
   def forward_autodiff(self, var):
     Number.opcount = 0
@@ -55,6 +58,15 @@ class Number:
     self.grad_value = None
     for partial, parent in self.parents:
       parent._reset_grad()
+  
+  #def _is_variable_of_interest(self):
+  #  if self.is_variable_of_interest is None:
+  #    self.is_variable_of_interest = False
+  #    for partial, parent in self.parents:
+  #      if parent._is_variable_of_interest():
+  #        self.is_variable_of_interest = True
+  #        break;
+  #  return self.is_variable_of_interest
     
   def add(self, other):
     z = Number(self.value + other.value)
@@ -90,17 +102,37 @@ class Number:
     other.children.append((partial_z_wrt_other, z))
     return z
     
-  def pow(self, other):
+  def pow(self, other, is_constant_exponent = True):
     z = Number(self.value ** other.value)
+
+    # Attempt #1 - Didn't allow non constants (e.g. variables of interest)
+    # in the exponent e.g. no e^x
+    #partial_z_wrt_self = other.value * self.value ** (other.value - 1)
+    #z.parents.append((partial_z_wrt_self, self))
+    #self.children.append((partial_z_wrt_self, z))
+
+    # Attempt #2
+    # Reference material
+    # https://github.com/JuliaDiff/ForwardDiff.jl/blob/master/src/dual.jl
+    # https://math.stackexchange.com/questions/210915/derivative-of-a-function-raised-to-the-power-of-x
     partial_z_wrt_self = other.value * self.value ** (other.value - 1)
+    # This is super hokey.
+    if is_constant_exponent:
+      partial_z_wrt_other = 1
+    else:
+      partial_z_wrt_other = z.value * math.log(self.value)
+    
     z.parents.append((partial_z_wrt_self, self))
+    z.parents.append((partial_z_wrt_other, other))
     self.children.append((partial_z_wrt_self, z))
+    other.children.append((partial_z_wrt_other, z))
+    
     return z
     
   def neg(self):
     z = Number(-self.value)
     z.parents.append((-1.0, self))
-    self.children.append((-1, z))
+    self.children.append((-1.0, z))
     return z
     
   def abs(self):
@@ -144,7 +176,7 @@ class Number:
 
   def __rpow__(self, other):
     other = other if isinstance(other, Number) else Number(other)
-    return other.pow(self)
+    return other.pow(self, False)
 
   def __neg__(self):
     return self.neg()

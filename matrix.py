@@ -98,6 +98,12 @@ class Matrix:
         for k in range(self.cols):
           m.data[r * m.cols + c] += self.get(r, k) * other.get(k, c)
     return m
+
+  def reduce_sum(self):
+    s = 0
+    for i in range(len(self.data)):
+      s += self.data[i]
+    return s
   
   def transpose(self):
     m = Matrix(self.cols, self.rows)
