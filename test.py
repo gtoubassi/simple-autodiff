@@ -1,6 +1,6 @@
 from number import Number
 from matrix import Matrix
-from finite_diff import finite_difference
+import finite_diff
 import math
 
 num_tests = 0
@@ -41,7 +41,7 @@ def test_simple():
   test_assert(-17 == (-Number(17)).value, "-17")
 
 def func_constant(x):
-  return 3
+  return Number(3) if isinstance(x, Number) else 3
 
 def func_linear(x):
   return 3*x + 2
@@ -92,22 +92,18 @@ def test_derivative(func, low_range, high_range):
   for i in range(10):
     x = low_range + i * (high_range - low_range) / 10
     eval_native = func(x)
-    number_x = Number(x)
-    eval_number = func(number_x)
-    eval_number = eval_number if isinstance(eval_number, Number) else Number(eval_number)
-    test_assert(eval_native == eval_number.value)
     
     # Finite difference
-    finite_diff_derivative = finite_difference(func, [x])
+    _, finite_diff_derivative = finite_diff.finite_difference(func, [x])
     
     # Forward mode autodiff
-    forward_deriv = eval_number.forward_autodiff(number_x)
-    forward_ops = Number.opcount
+    eval_number, forward_deriv, forward_ops = finite_diff.autodiff(func, [x], reverse_mode = False)
+    test_assert(eval_native == eval_number.value)
     test_assert(abs(finite_diff_derivative - forward_deriv) < 1e-3)
     
     # Reverse mode autodiff
-    reverse_deriv = eval_number.reverse_autodiff(number_x)
-    reverse_ops = Number.opcount
+    eval_number, reverse_deriv, reverse_ops = finite_diff.autodiff(func, [x])
+    test_assert(eval_native == eval_number.value)
     test_assert(abs(finite_diff_derivative - reverse_deriv) < 1e-3)
 
     test_assert(reverse_ops <= forward_ops)
@@ -173,26 +169,23 @@ def test_gradient(func, low_range, high_range):
         
         eval_native = func(x)
   
-        finite_diff = finite_difference(func, [x])
+        _, finite_diff_derivative = finite_diff.finite_difference(func, [x])
   
-        x_number = convert_to_number(x)
-        eval_number = func(x_number)
-        
-        # Forward mode autodiff  
-        forward_grad = eval_number.forward_autodiff(x_number)
-        forward_ops = Number.opcount
-        test_assert(finite_diff.compare(forward_grad, 1e-3))
+        # Forward mode autodiff
+        eval_number, forward_grad, forward_ops = finite_diff.autodiff(func, [x], reverse_mode = False)
+        test_assert(eval_native.compare(eval_number))
+        test_assert(finite_diff_derivative.compare(forward_grad, 1e-3))
   
         # Reverse mode autodiff  
-        reverse_grad = eval_number.reverse_autodiff(x_number)
-        reverse_ops = Number.opcount
-        test_assert(finite_diff.compare(reverse_grad, 1e-3))
+        eval_number, reverse_grad, reverse_ops = finite_diff.autodiff(func, [x])
+        test_assert(eval_native.compare(eval_number))
+        test_assert(finite_diff_derivative.compare(reverse_grad, 1e-3))
   
         test_assert(reverse_ops <= forward_ops)
   
 def test_gradients():
-  test_gradient(func_gradient_const, -1.0, 2.0)
   test_gradient(func_gradient_dot, -1.0, 2.0)
+  test_gradient(func_gradient_const, -1.0, 2.0)
   test_gradient(func_gradient_matmul, -1.0, 2.0)
   test_gradient(func_gradient_hadamard, -1.0, 2.0)
   test_gradient(func_gradient_square, -1.0, 2.0)
