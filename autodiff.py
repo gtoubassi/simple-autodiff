@@ -51,7 +51,6 @@ def convert_to_number(m):
     return Matrix(m.rows, m.cols, lambda r, c: Number(m.get(r, c)))
   return Number(m)
   
-  
 def autodiff(func, params, reverse_mode = True):
   global epsilon
 
