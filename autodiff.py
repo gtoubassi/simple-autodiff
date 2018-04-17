@@ -78,7 +78,7 @@ def forward_autodiff(result, var):
 
   # Todo, we are assuming a true gradient, no jacobians here
   if isinstance(result, Matrix):
-    assert results.rows == 1 and result.cols == 1, 'no jacobian support'
+    assert result.rows == 1 and result.cols == 1, 'no jacobian support'
     result = result[0,0]
   
   if isinstance(var, Matrix):
