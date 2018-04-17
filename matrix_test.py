@@ -35,29 +35,58 @@ def test_initialization():
 def test_add():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
   m2 = Matrix(3, 2, [[7, 8], [9, 10], [11, 12]])
-  m1plusm2 = m1.add(m2)
   m1plusm2_correct = Matrix(3, 2, [[8, 10], [12, 14], [16, 18]])
+  m1plusm2 = m1.add(m2)
+  test_assert(m1plusm2.compare(m1plusm2_correct))
+  m1plusm2 = m1 + m2
   test_assert(m1plusm2.compare(m1plusm2_correct))
 
 def test_sub():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
   m2 = Matrix(3, 2, [[7, 9], [11, 13], [15, 17]])
-  m1subm2 = m1.sub(m2)
   m1subm2_correct = Matrix(3, 2, [[-6, -7], [-8, -9], [-10, -11]])
+  m1subm2 = m1.sub(m2)
+  test_assert(m1subm2.compare(m1subm2_correct))
+  m1subm2 = m1 - m2
   test_assert(m1subm2.compare(m1subm2_correct))
 
 def test_hadamard():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
   m2 = Matrix(3, 2, [[7, 9], [11, 13], [15, 17]])
-  m1hadamardm2 = m1.hadamard(m2)
   m1hadamardm2_correct = Matrix(3, 2, [[7, 18], [33, 52], [75, 102]])
+  m1hadamardm2 = m1.hadamard(m2)
+  test_assert(m1hadamardm2.compare(m1hadamardm2_correct))
+  m1hadamardm2 = m1 * m2
+  test_assert(m1hadamardm2.compare(m1hadamardm2_correct))
+  m1hadamardm2 = m2 * m1
   test_assert(m1hadamardm2.compare(m1hadamardm2_correct))
 
 def test_scalarmul():
   m = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
-  m = m.scalarmul(.5)
+  m2 = m.scalarmul(.5)
   correct = Matrix(3, 2, [[.5, 1], [1.5, 2], [2.5, 3]])
-  test_assert(m.compare(correct))
+  test_assert(m2.compare(correct))
+  m2 = .5 * m
+  test_assert(m2.compare(correct))
+  m2 = m * .5
+  test_assert(m2.compare(correct))
+
+def test_elementdiv():
+  m1 = Matrix(3, 2, [[10, 8], [7, 4], [3, 12]])
+  m2 = Matrix(3, 2, [[5, 2], [2, 1], [2, 6]])
+  m1divm2_correct = Matrix(3, 2, [[2, 4], [3.5, 4], [1.5, 2]])
+  m1divm2 = m1.elementdiv(m2)
+  test_assert(m1divm2.compare(m1divm2_correct))
+  m1divm2 = m1 / m2
+  test_assert(m1divm2.compare(m1divm2_correct))
+
+def test_scalardiv():
+  m = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
+  m2 = m.scalardiv(2)
+  correct = Matrix(3, 2, [[.5, 1], [1.5, 2], [2.5, 3]])
+  test_assert(m2.compare(correct))
+  m2 = m / 2.0
+  test_assert(m2.compare(correct))
 
 def test_matmul():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
@@ -86,15 +115,41 @@ def test_with_numbers():
   m1mulm2 = m1.matmul(m2)
   m1mulm2_correct = convert_to_number(Matrix(3, 3, [[1*7 + 2*10, 1*8 + 2*11, 1*9 + 2*12], [3*7 + 4*10, 3*8 + 4*11, 3*9 + 4*12], [5*7 + 6*10, 5*8 + 6*11, 5*9 + 6*12]]))
   test_assert(m1mulm2.compare(m1mulm2_correct))
+
+def test_operator_index():
+  m = Matrix(2,1, [[3], [5]])
+  test_assert(m[0] == 3)
+  test_assert(m[1] == 5)
+  test_assert(m[0,0] == 3)
+  test_assert(m[1,0] == 5)
+
+  m = Matrix(2,3, [[2,3,4], [5,6,7]])
+  test_assert(m[0,0] == 2)
+  test_assert(m[0,1] == 3)
+  test_assert(m[0,2] == 4)
+  test_assert(m[1,0] == 5)
+  test_assert(m[1,1] == 6)
+  test_assert(m[1,2] == 7)
+  
+  m[1,2] = 14.3
+  test_assert(m[0,0] == 2)
+  test_assert(m[0,1] == 3)
+  test_assert(m[0,2] == 4)
+  test_assert(m[1,0] == 5)
+  test_assert(m[1,1] == 6)
+  test_assert(m[1,2] == 14.3)
   
 def main():
   global num_tests, num_passed
 
+  test_operator_index()
   test_initialization()
   test_add()
   test_sub()
   test_hadamard()
   test_scalarmul()
+  test_elementdiv()
+  test_scalardiv()
   test_matmul()
   test_transpose()
   test_with_numbers()

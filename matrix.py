@@ -16,30 +16,6 @@ class Matrix:
           self.data[r * self.cols + c] = initializer[r][c]
     elif isinstance(initializer, float) or isinstance(initializer, int):
       self.data = [initializer] * (rows * cols)
-
-  def reverse_autodiff(self, var):
-    Number.opcount = 0
-    self.apply(lambda x: x._reset_grad())
-    var.apply(lambda x: x._reset_grad())
-    for i in range(len(self.data)):
-      self.data[i].grad_value = 1
-    var.apply(lambda x: x._do_reverse_autodiff())
-    z = Matrix(var.rows, 1)
-    # Todo, we are assuming a true gradient, no jacobians here
-    for r in range(z.rows):
-      z.data[r * z.cols + 0] = var.get(r, 0).grad_value
-    return z
-
-  def forward_autodiff(self, var):
-    Number.opcount = 0
-    z = Matrix(var.rows, 1)
-    # Todo, we are assuming a true gradient, no jacobians here
-    for r in range(z.rows):
-      self.apply(lambda x: x._reset_grad())
-      var.apply(lambda x: x._reset_grad())
-      var.data[r * z.cols + 0].grad_value = 1
-      z.data[r * z.cols + 0] = self.get(0, 0)._do_forward_autodiff()
-    return z
     
   def copy(self):
     m = Matrix(self.rows, self.cols)
@@ -89,6 +65,19 @@ class Matrix:
       m.data[i] = self.data[i] * scalar
     return m
 
+  def elementdiv(self, other):
+    assert self.rows == other.rows and self.cols == other.cols
+    m = Matrix(self.rows, self.cols)
+    for i in range(len(self.data)):
+      m.data[i] = self.data[i] / other.data[i]
+    return m
+
+  def scalardiv(self, scalar):
+    m = Matrix(self.rows, self.cols)
+    for i in range(len(self.data)):
+      m.data[i] = self.data[i] / scalar
+    return m
+
   def matmul(self, other):
     assert self.cols == other.rows
     m = Matrix(self.rows, other.cols)
@@ -111,7 +100,45 @@ class Matrix:
       for c in range(m.cols):
           m.data[r * m.cols + c] = self.get(c, r)
     return m
-        
+  
+  def __getitem__(self, key):
+    if isinstance(key, int):
+      assert self.cols == 1, "Must specify 2 arguments for indexing a non column matrix (%d, %d)" % (self.rows, self.cols)
+      return self.get(key, 0)
+    if isinstance(key, tuple):
+      assert len(key) == 2, "Must specify 2 arguments for indexing a matrix (%d, %d)" % (self.rows, self.cols)
+      return self.get(key[0], key[1])
+    
+    raise TypeError
 
+  def __setitem__(self, key, value):
+    if isinstance(key, int):
+      assert self.cols == 1, "Must specify 2 arguments for indexing a non column matrix (%d, %d)" % (self.rows, self.cols)
+      self.data[key * self.cols + 0] = value
+    elif isinstance(key, tuple):
+      assert len(key) == 2, "Must specify 2 arguments for indexing a matrix (%d, %d)" % (self.rows, self.cols)
+      self.data[key[0] * self.cols + key[1]] = value
+    else:
+      raise TypeError
 
+  def __add__(self, other):
+    return self.add(other)
+
+  def __sub__(self, other):
+    return self.sub(other)
+
+  def __mul__(self, other):
+    if isinstance(other, Matrix):
+      return self.hadamard(other)
+    elif isinstance(other, float) or isinstance(other, int):
+      return self.scalarmul(other)
+
+  def __rmul__(self, other):
+    return self.__mul__(other)
+
+  def __truediv__(self, other):
+    if isinstance(other, Matrix):
+      return self.elementdiv(other)
+    elif isinstance(other, float) or isinstance(other, int):
+      return self.scalardiv(other)
 

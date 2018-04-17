@@ -17,22 +17,6 @@ class Number:
     self.children = []
     self.grad_value = None
   
-  def forward_autodiff(self, var):
-    Number.opcount = 0
-    self._reset_grad()
-    var._reset_grad()
-    var.grad_value = 1
-    z = self._do_forward_autodiff()
-    return z
-  
-  def reverse_autodiff(self, var):
-    Number.opcount = 0
-    self._reset_grad()
-    var._reset_grad()
-    self.grad_value = 1
-    z = var._do_reverse_autodiff()
-    return z
-  
   def _do_forward_autodiff(self):
     # Strictly speaking forward pass doesn't need caching since
     # we are executing in a non repetitive order

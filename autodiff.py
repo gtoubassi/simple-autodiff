@@ -44,6 +44,58 @@ def finite_difference(func, params):
 
   return (eval_f, derivatives) 
 
+
+def reverse_autodiff(result, var):
+  Number.opcount = 0
+
+  if isinstance(result, Matrix):
+    result.apply(lambda x: x._reset_grad())
+    for i in range(len(result.data)):
+      result.data[i].grad_value = 1
+  else:
+    result._reset_grad()
+    result.grad_value = 1
+  
+  if isinstance(var, Matrix):
+    var.apply(lambda x: x._reset_grad())
+    var.apply(lambda x: x._do_reverse_autodiff())
+    z = Matrix(var.rows, 1)
+    for r in range(z.rows):
+      z.data[r * z.cols + 0] = var.get(r, 0).grad_value
+  else:
+    var._reset_grad()
+    z = var._do_reverse_autodiff()    
+  # Todo, we are assuming a true gradient, no jacobians here
+  return z
+
+  def forward_autodiff(self, var):
+    Number.opcount = 0
+    return z
+  
+
+def forward_autodiff(result, var):
+  Number.opcount = 0
+
+  # Todo, we are assuming a true gradient, no jacobians here
+  if isinstance(result, Matrix):
+    assert results.rows == 1 and result.cols == 1, 'no jacobian support'
+    result = result[0,0]
+  
+  if isinstance(var, Matrix):
+    z = Matrix(var.rows, 1)
+    for r in range(z.rows):
+      result._reset_grad()
+      var.apply(lambda x: x._reset_grad())
+      var.data[r * z.cols + 0].grad_value = 1
+      z.data[r * z.cols + 0] = result._do_forward_autodiff()
+  else:
+    result._reset_grad()
+    var._reset_grad()
+    var.grad_value = 1
+    z = result._do_forward_autodiff()
+    
+  return z
+
 def convert_to_number(m):
   if isinstance(m, Number):
     return m
@@ -51,29 +103,20 @@ def convert_to_number(m):
     return Matrix(m.rows, m.cols, lambda r, c: Number(m.get(r, c)))
   return Number(m)
   
-def autodiff(func, params, reverse_mode = True):
-  global epsilon
+def convert_from_number(m):
+  if isinstance(m, Number):
+    return m.value
+  if isinstance(m, Matrix):
+    return Matrix(m.rows, m.cols, lambda r, c: m[r,c].value if isinstance(m[r,c], Number) else m[r,c])
+  return m
 
-  derivatives = []
-
-  p = []
-  for param in params:
-    p.append(convert_to_number(param))
-  params = p
-
-  # compute f(x)
-  eval_f = func(*params)
-
-  opcount = 0
-  for param in params:
-    if reverse_mode:
-      deriv = eval_f.reverse_autodiff(param)
-    else:
-      deriv = eval_f.forward_autodiff(param)
-    opcount += Number.opcount
-    derivatives.append(deriv)
-
-  if len(derivatives) == 1:
-    derivatives = derivatives[0]
-
-  return (eval_f, derivatives, opcount) 
+def compute_gradients(func, args, gradient_target, reverse_mode = True):
+  args = list(map((lambda x: convert_to_number(x)), args))
+  f_val = func(*args)
+  if reverse_mode:
+    f_grad = reverse_autodiff(f_val, args[gradient_target])
+  else:
+    f_grad = forward_autodiff(f_val, args[gradient_target])
+  f_val = convert_from_number(f_val)
+  f_grad = convert_from_number(f_grad)
+  return f_val, f_grad, Number.opcount
