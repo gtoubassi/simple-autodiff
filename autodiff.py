@@ -1,5 +1,6 @@
 from matrix import Matrix
-from number import Number
+import scalar
+from scalar import Scalar
 
 epsilon = 1e-7
 
@@ -46,7 +47,7 @@ def finite_difference(func, params):
 
 
 def reverse_autodiff(result, var):
-  Number.opcount = 0
+  Scalar.opcount = 0
 
   if isinstance(result, Matrix):
     result.apply(lambda x: x._reset_grad())
@@ -69,12 +70,12 @@ def reverse_autodiff(result, var):
   return z
 
   def forward_autodiff(self, var):
-    Number.opcount = 0
+    Scalar.opcount = 0
     return z
   
 
 def forward_autodiff(result, var):
-  Number.opcount = 0
+  Scalar.opcount = 0
 
   # Todo, we are assuming a true gradient, no jacobians here
   if isinstance(result, Matrix):
@@ -96,27 +97,13 @@ def forward_autodiff(result, var):
     
   return z
 
-def convert_to_number(m):
-  if isinstance(m, Number):
-    return m
-  if isinstance(m, Matrix):
-    return Matrix(m.rows, m.cols, lambda r, c: Number(m.get(r, c)))
-  return Number(m)
-  
-def convert_from_number(m):
-  if isinstance(m, Number):
-    return m.value
-  if isinstance(m, Matrix):
-    return Matrix(m.rows, m.cols, lambda r, c: m[r,c].value if isinstance(m[r,c], Number) else m[r,c])
-  return m
-
 def compute_gradients(func, args, gradient_target, reverse_mode = True):
-  args = list(map((lambda x: convert_to_number(x)), args))
+  args = list(map((lambda x: scalar.convert_to_scalar(x)), args))
   f_val = func(*args)
   if reverse_mode:
     f_grad = reverse_autodiff(f_val, args[gradient_target])
   else:
     f_grad = forward_autodiff(f_val, args[gradient_target])
-  f_val = convert_from_number(f_val)
-  f_grad = convert_from_number(f_grad)
-  return f_val, f_grad, Number.opcount
+  f_val = scalar.convert_from_scalar(f_val)
+  f_grad = scalar.convert_from_scalar(f_grad)
+  return f_val, f_grad, Scalar.opcount

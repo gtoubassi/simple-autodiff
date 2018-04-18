@@ -1,4 +1,4 @@
-from number import Number
+from scalar import Scalar
 from matrix import Matrix
 import autodiff
 import math
@@ -18,30 +18,30 @@ def test_assert(cond, message=None):
       print("Failure:", message)
 
 def test_simple():
-  test_assert(3.0 == (Number(1) + Number(2)).value, "1 + 2 == 3")
-  test_assert(3.0 == (1 + Number(2)).value, "1 + 2 == 3")
-  test_assert(3.0 == (Number(1) + 2).value, "1 + 2 == 3")
+  test_assert(3.0 == (Scalar(1) + Scalar(2)).value, "1 + 2 == 3")
+  test_assert(3.0 == (1 + Scalar(2)).value, "1 + 2 == 3")
+  test_assert(3.0 == (Scalar(1) + 2).value, "1 + 2 == 3")
 
-  test_assert(3.5 == (Number(.5) * Number(7)).value, ".5 * 7 = 3.5")
-  test_assert(3.5 == (.5 * Number(7)).value, ".5 * 7 = 3.5")
-  test_assert(3.5 == (Number(.5) * 7).value, ".5 * 7 = 3.5")
+  test_assert(3.5 == (Scalar(.5) * Scalar(7)).value, ".5 * 7 = 3.5")
+  test_assert(3.5 == (.5 * Scalar(7)).value, ".5 * 7 = 3.5")
+  test_assert(3.5 == (Scalar(.5) * 7).value, ".5 * 7 = 3.5")
 
-  test_assert(-1 == (Number(1) - Number(2)).value, "1 - 2 == -1")
-  test_assert(-1 == (1 - Number(2)).value, "1 - 2 == -1")
-  test_assert(-1 == (Number(1) - 2).value, "1 - 2 == -1")
+  test_assert(-1 == (Scalar(1) - Scalar(2)).value, "1 - 2 == -1")
+  test_assert(-1 == (1 - Scalar(2)).value, "1 - 2 == -1")
+  test_assert(-1 == (Scalar(1) - 2).value, "1 - 2 == -1")
 
-  test_assert(3.4 == (Number(17) / Number(5)).value, "17 / 5 == 3.4")
-  test_assert(3.4 == (17 / Number(5)).value, "17 / 5 == 3.4")
-  test_assert(3.4 == (Number(17) / 5).value, "17 / 5 == 3.4")
+  test_assert(3.4 == (Scalar(17) / Scalar(5)).value, "17 / 5 == 3.4")
+  test_assert(3.4 == (17 / Scalar(5)).value, "17 / 5 == 3.4")
+  test_assert(3.4 == (Scalar(17) / 5).value, "17 / 5 == 3.4")
 
-  test_assert(81 == (Number(3) ** Number(4)).value, "3^4 == 81")
-  test_assert(81 == (3 ** Number(4)).value, "3^4 == 81")
-  test_assert(81 == (Number(3) ** 4).value, "3^4 == 81")
+  test_assert(81 == (Scalar(3) ** Scalar(4)).value, "3^4 == 81")
+  test_assert(81 == (3 ** Scalar(4)).value, "3^4 == 81")
+  test_assert(81 == (Scalar(3) ** 4).value, "3^4 == 81")
 
-  test_assert(-17 == (-Number(17)).value, "-17")
+  test_assert(-17 == (-Scalar(17)).value, "-17")
 
 def func_constant(x):
-  return Number(3) if isinstance(x, Number) else 3
+  return Scalar(3) if isinstance(x, Scalar) else 3
 
 def func_linear(x):
   return 3*x + 2
@@ -125,9 +125,6 @@ def test_simple_derivative():
   test_derivative(func_neg_chain, -2.0, 2.0)
   test_derivative(func_exp, -2.0, 2.0)
   test_derivative(func_sigmoid, -2.0, 2.0)
-
-def convert_to_number(m):
-  return Matrix(m.rows, m.cols, lambda r, c: Number(m.get(r, c)))
 
 def func_gradient_const(x):
   p = Matrix(3, 1, [[0], [0], [0]])

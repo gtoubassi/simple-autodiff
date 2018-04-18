@@ -1,4 +1,3 @@
-from number import Number
 
 class Matrix:
   

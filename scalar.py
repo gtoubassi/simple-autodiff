@@ -1,14 +1,15 @@
 import math
+from matrix import Matrix
 
 # TODO
 #
 # 1. Move auto diff code into autodiff.py
 # 2. Handle jacobians as well
 # 3. Centralize finite diff code (into autodiff?)
-# 4. Support for exp(Number) which means fixing pow's autodiff.  The full monty is
+# 4. Support for exp(Scalar) which means fixing pow's autodiff.  The full monty is
 #   https://math.stackexchange.com/questions/210915/derivative-of-a-function-raised-to-the-power-of-x
 
-class Number:
+class Scalar:
   opcount = 0
 
   def __init__(self, value):
@@ -21,7 +22,7 @@ class Number:
     # Strictly speaking forward pass doesn't need caching since
     # we are executing in a non repetitive order
     if self.grad_value is None:
-      Number.opcount += 1
+      Scalar.opcount += 1
       self.grad_value = 0
       for partial, parent in self.parents:
         self.grad_value += partial * parent._forward_autodiff()
@@ -30,7 +31,7 @@ class Number:
     
   def _reverse_autodiff(self):
     if self.grad_value is None:
-      Number.opcount += 1
+      Scalar.opcount += 1
       self.grad_value = 0
       for partial, child in self.children:
         self.grad_value += partial * child._reverse_autodiff()
@@ -46,8 +47,8 @@ class Number:
     return self if self.value >= 0 else self.neg()
     
   def __add__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    z = Number(self.value + other.value)
+    other = other if isinstance(other, Scalar) else Scalar(other)
+    z = Scalar(self.value + other.value)
     z.parents.append((1.0, self))
     z.parents.append((1.0, other))
     self.children.append((1.0, z))
@@ -58,8 +59,8 @@ class Number:
     return self.__add__(other)
 
   def __sub__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    z = Number(self.value - other.value)
+    other = other if isinstance(other, Scalar) else Scalar(other)
+    z = Scalar(self.value - other.value)
     z.parents.append((1.0, self))
     z.parents.append((-1.0, other))
     self.children.append((1.0, z))
@@ -67,12 +68,12 @@ class Number:
     return z
 
   def __rsub__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
+    other = other if isinstance(other, Scalar) else Scalar(other)
     return other.__sub__(self)
 
   def __mul__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    z = Number(self.value * other.value)
+    other = other if isinstance(other, Scalar) else Scalar(other)
+    z = Scalar(self.value * other.value)
     z.parents.append((other.value, self))
     z.parents.append((self.value, other))
     self.children.append((other.value, z))
@@ -83,8 +84,8 @@ class Number:
     return self.__mul__(other)
 
   def __truediv__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    z = Number(self.value / other.value)
+    other = other if isinstance(other, Scalar) else Scalar(other)
+    z = Scalar(self.value / other.value)
     partial_z_wrt_self = 1 / other.value
     partial_z_wrt_other = -self.value / other.value**2
     z.parents.append((partial_z_wrt_self, self))
@@ -94,12 +95,12 @@ class Number:
     return z
 
   def __rtruediv__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
+    other = other if isinstance(other, Scalar) else Scalar(other)
     return other.__truediv__(self)
 
   def __pow__(self, other, is_constant_exponent = True):
-    other = other if isinstance(other, Number) else Number(other)
-    z = Number(self.value ** other.value)
+    other = other if isinstance(other, Scalar) else Scalar(other)
+    z = Scalar(self.value ** other.value)
 
     # Attempt #1 - Didn't allow non constants (e.g. variables of interest)
     # in the exponent e.g. no e^x
@@ -126,11 +127,11 @@ class Number:
     return z
 
   def __rpow__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
+    other = other if isinstance(other, Scalar) else Scalar(other)
     return other.__pow__(self, False)
 
   def __neg__(self):
-    z = Number(-self.value)
+    z = Scalar(-self.value)
     z.parents.append((-1.0, self))
     self.children.append((-1.0, z))
     return z
@@ -142,20 +143,34 @@ class Number:
     return self.value == other.value
   
   def __lt__(self, other):
-    other = other.value if isinstance(other, Number) else other
+    other = other.value if isinstance(other, Scalar) else other
     return self.value < other
       
   def __le__(self, other):
-    other = other.value if isinstance(other, Number) else other
+    other = other.value if isinstance(other, Scalar) else other
     return self.value <= other
   
   def __gt__(self, other):
-    other = other.value if isinstance(other, Number) else other
+    other = other.value if isinstance(other, Scalar) else other
     return self.value > other
       
   def __ge__(self, other):
-    other = other.value if isinstance(other, Number) else other
+    other = other.value if isinstance(other, Scalar) else other
     return self.value >= other
       
   def __str__(self):
     return str(self.value) + 'n'
+
+def convert_to_scalar(m):
+  if isinstance(m, Scalar):
+    return m
+  if isinstance(m, Matrix):
+    return Matrix(m.rows, m.cols, lambda r, c: Scalar(m[r, c]))
+  return Scalar(m)
+  
+def convert_from_scalar(m):
+  if isinstance(m, Scalar):
+    return m.value
+  if isinstance(m, Matrix):
+    return Matrix(m.rows, m.cols, lambda r, c: m[r,c].value if isinstance(m[r,c], Scalar) else m[r,c])
+  return m
