@@ -132,7 +132,7 @@ def convert_to_number(m):
 def func_gradient_const(x):
   p = Matrix(3, 1, [[0], [0], [0]])
   b = Matrix(1, 1, [[12]])
-  return x.transpose().matmul(p).add(b)
+  return x.transpose().matmul(p) + (b)
 
 def func_gradient_dot(x):
   p = Matrix(3, 1, [[3.0], [4.0], [5.0]])
@@ -145,15 +145,15 @@ def func_gradient_matmul(x):
 
 def func_gradient_hadamard(x):
   p = Matrix(3, 1, [[3.0], [4.0], [5.0]])
-  z = x.hadamard(p).reduce_sum()
+  z = (x * p).reduce_sum()
   return Matrix(1,1,[[z]])
 
 def func_gradient_square(x):
-  z = x.hadamard(x).reduce_sum()
+  z = (x * x).reduce_sum()
   return Matrix(1,1,[[z]])
 
 def func_gradient_scalarmul(x):
-  z = x.scalarmul(12).reduce_sum()
+  z = (12 * x).reduce_sum()
   return Matrix(1,1,[[z]])
 
 def test_gradient(func, low_range, high_range):

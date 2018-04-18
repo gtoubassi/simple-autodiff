@@ -36,8 +36,6 @@ def test_add():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
   m2 = Matrix(3, 2, [[7, 8], [9, 10], [11, 12]])
   m1plusm2_correct = Matrix(3, 2, [[8, 10], [12, 14], [16, 18]])
-  m1plusm2 = m1.add(m2)
-  test_assert(m1plusm2.compare(m1plusm2_correct))
   m1plusm2 = m1 + m2
   test_assert(m1plusm2.compare(m1plusm2_correct))
 
@@ -45,8 +43,6 @@ def test_sub():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
   m2 = Matrix(3, 2, [[7, 9], [11, 13], [15, 17]])
   m1subm2_correct = Matrix(3, 2, [[-6, -7], [-8, -9], [-10, -11]])
-  m1subm2 = m1.sub(m2)
-  test_assert(m1subm2.compare(m1subm2_correct))
   m1subm2 = m1 - m2
   test_assert(m1subm2.compare(m1subm2_correct))
 
@@ -54,8 +50,6 @@ def test_hadamard():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
   m2 = Matrix(3, 2, [[7, 9], [11, 13], [15, 17]])
   m1hadamardm2_correct = Matrix(3, 2, [[7, 18], [33, 52], [75, 102]])
-  m1hadamardm2 = m1.hadamard(m2)
-  test_assert(m1hadamardm2.compare(m1hadamardm2_correct))
   m1hadamardm2 = m1 * m2
   test_assert(m1hadamardm2.compare(m1hadamardm2_correct))
   m1hadamardm2 = m2 * m1
@@ -63,9 +57,7 @@ def test_hadamard():
 
 def test_scalarmul():
   m = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
-  m2 = m.scalarmul(.5)
   correct = Matrix(3, 2, [[.5, 1], [1.5, 2], [2.5, 3]])
-  test_assert(m2.compare(correct))
   m2 = .5 * m
   test_assert(m2.compare(correct))
   m2 = m * .5
@@ -75,16 +67,12 @@ def test_elementdiv():
   m1 = Matrix(3, 2, [[10, 8], [7, 4], [3, 12]])
   m2 = Matrix(3, 2, [[5, 2], [2, 1], [2, 6]])
   m1divm2_correct = Matrix(3, 2, [[2, 4], [3.5, 4], [1.5, 2]])
-  m1divm2 = m1.elementdiv(m2)
-  test_assert(m1divm2.compare(m1divm2_correct))
   m1divm2 = m1 / m2
   test_assert(m1divm2.compare(m1divm2_correct))
 
 def test_scalardiv():
   m = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
-  m2 = m.scalardiv(2)
   correct = Matrix(3, 2, [[.5, 1], [1.5, 2], [2.5, 3]])
-  test_assert(m2.compare(correct))
   m2 = m / 2.0
   test_assert(m2.compare(correct))
 

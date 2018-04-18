@@ -58,13 +58,13 @@ def reverse_autodiff(result, var):
   
   if isinstance(var, Matrix):
     var.apply(lambda x: x._reset_grad())
-    var.apply(lambda x: x._do_reverse_autodiff())
+    var.apply(lambda x: x._reverse_autodiff())
     z = Matrix(var.rows, 1)
     for r in range(z.rows):
       z.data[r * z.cols + 0] = var.get(r, 0).grad_value
   else:
     var._reset_grad()
-    z = var._do_reverse_autodiff()    
+    z = var._reverse_autodiff()    
   # Todo, we are assuming a true gradient, no jacobians here
   return z
 
@@ -87,12 +87,12 @@ def forward_autodiff(result, var):
       result._reset_grad()
       var.apply(lambda x: x._reset_grad())
       var.data[r * z.cols + 0].grad_value = 1
-      z.data[r * z.cols + 0] = result._do_forward_autodiff()
+      z.data[r * z.cols + 0] = result._forward_autodiff()
   else:
     result._reset_grad()
     var._reset_grad()
     var.grad_value = 1
-    z = result._do_forward_autodiff()
+    z = result._forward_autodiff()
     
   return z
 

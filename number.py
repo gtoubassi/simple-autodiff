@@ -17,23 +17,23 @@ class Number:
     self.children = []
     self.grad_value = None
   
-  def _do_forward_autodiff(self):
+  def _forward_autodiff(self):
     # Strictly speaking forward pass doesn't need caching since
     # we are executing in a non repetitive order
     if self.grad_value is None:
       Number.opcount += 1
       self.grad_value = 0
       for partial, parent in self.parents:
-        self.grad_value += partial * parent._do_forward_autodiff()
+        self.grad_value += partial * parent._forward_autodiff()
     
     return self.grad_value
     
-  def _do_reverse_autodiff(self):
+  def _reverse_autodiff(self):
     if self.grad_value is None:
       Number.opcount += 1
       self.grad_value = 0
       for partial, child in self.children:
-        self.grad_value += partial * child._do_reverse_autodiff()
+        self.grad_value += partial * child._reverse_autodiff()
   
     return self.grad_value
 
@@ -41,8 +41,12 @@ class Number:
     self.grad_value = None
     for partial, parent in self.parents:
       parent._reset_grad()
-  
-  def add(self, other):
+    
+  def abs(self):
+    return self if self.value >= 0 else self.neg()
+    
+  def __add__(self, other):
+    other = other if isinstance(other, Number) else Number(other)
     z = Number(self.value + other.value)
     z.parents.append((1.0, self))
     z.parents.append((1.0, other))
@@ -50,7 +54,11 @@ class Number:
     other.children.append((1.0, z))
     return z
 
-  def sub(self, other):
+  def __radd__(self, other):
+    return self.__add__(other)
+
+  def __sub__(self, other):
+    other = other if isinstance(other, Number) else Number(other)
     z = Number(self.value - other.value)
     z.parents.append((1.0, self))
     z.parents.append((-1.0, other))
@@ -58,15 +66,24 @@ class Number:
     other.children.append((-1.0, z))
     return z
 
-  def mul(self, other):
+  def __rsub__(self, other):
+    other = other if isinstance(other, Number) else Number(other)
+    return other.__sub__(self)
+
+  def __mul__(self, other):
+    other = other if isinstance(other, Number) else Number(other)
     z = Number(self.value * other.value)
     z.parents.append((other.value, self))
     z.parents.append((self.value, other))
     self.children.append((other.value, z))
     other.children.append((self.value, z))
     return z
-    
-  def truediv(self, other):
+
+  def __rmul__(self, other):
+    return self.__mul__(other)
+
+  def __truediv__(self, other):
+    other = other if isinstance(other, Number) else Number(other)
     z = Number(self.value / other.value)
     partial_z_wrt_self = 1 / other.value
     partial_z_wrt_other = -self.value / other.value**2
@@ -75,8 +92,13 @@ class Number:
     self.children.append((partial_z_wrt_self, z))
     other.children.append((partial_z_wrt_other, z))
     return z
-    
-  def pow(self, other, is_constant_exponent = True):
+
+  def __rtruediv__(self, other):
+    other = other if isinstance(other, Number) else Number(other)
+    return other.__truediv__(self)
+
+  def __pow__(self, other, is_constant_exponent = True):
+    other = other if isinstance(other, Number) else Number(other)
     z = Number(self.value ** other.value)
 
     # Attempt #1 - Didn't allow non constants (e.g. variables of interest)
@@ -102,58 +124,16 @@ class Number:
     other.children.append((partial_z_wrt_other, z))
     
     return z
-    
-  def neg(self):
+
+  def __rpow__(self, other):
+    other = other if isinstance(other, Number) else Number(other)
+    return other.__pow__(self, False)
+
+  def __neg__(self):
     z = Number(-self.value)
     z.parents.append((-1.0, self))
     self.children.append((-1.0, z))
     return z
-    
-  def abs(self):
-    return self if self.value >= 0 else self.neg()
-    
-  def __add__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return self.add(other)
-
-  def __radd__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return other.add(self)
-
-  def __sub__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return self.sub(other)
-
-  def __rsub__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return other.sub(self)
-
-  def __mul__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return self.mul(other)
-
-  def __rmul__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return other.mul(self)
-
-  def __truediv__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return self.truediv(other)
-
-  def __rtruediv__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return other.truediv(self)
-
-  def __pow__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return self.pow(other)
-
-  def __rpow__(self, other):
-    other = other if isinstance(other, Number) else Number(other)
-    return other.pow(self, False)
-
-  def __neg__(self):
-    return self.neg()
   
   def __abs__(self):
     return self.abs()

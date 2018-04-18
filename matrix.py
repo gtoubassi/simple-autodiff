@@ -38,46 +38,6 @@ class Matrix:
   def get(self, row, col):
     return self.data[row * self.cols + col]
   
-  def add(self, other):
-    assert self.rows == other.rows and self.cols == other.cols
-    m = Matrix(self.rows, self.cols)
-    for i in range(len(self.data)):
-      m.data[i] = self.data[i] + other.data[i]
-    return m
-
-  def sub(self, other):
-    assert self.rows == other.rows and self.cols == other.cols
-    m = Matrix(self.rows, self.cols)
-    for i in range(len(self.data)):
-      m.data[i] = self.data[i] - other.data[i]
-    return m
-
-  def hadamard(self, other):
-    assert self.rows == other.rows and self.cols == other.cols
-    m = Matrix(self.rows, self.cols)
-    for i in range(len(self.data)):
-      m.data[i] = self.data[i] * other.data[i]
-    return m
-
-  def scalarmul(self, scalar):
-    m = Matrix(self.rows, self.cols)
-    for i in range(len(self.data)):
-      m.data[i] = self.data[i] * scalar
-    return m
-
-  def elementdiv(self, other):
-    assert self.rows == other.rows and self.cols == other.cols
-    m = Matrix(self.rows, self.cols)
-    for i in range(len(self.data)):
-      m.data[i] = self.data[i] / other.data[i]
-    return m
-
-  def scalardiv(self, scalar):
-    m = Matrix(self.rows, self.cols)
-    for i in range(len(self.data)):
-      m.data[i] = self.data[i] / scalar
-    return m
-
   def matmul(self, other):
     assert self.cols == other.rows
     m = Matrix(self.rows, other.cols)
@@ -122,23 +82,43 @@ class Matrix:
       raise TypeError
 
   def __add__(self, other):
-    return self.add(other)
+    assert self.rows == other.rows and self.cols == other.cols
+    m = Matrix(self.rows, self.cols)
+    for i in range(len(self.data)):
+      m.data[i] = self.data[i] + other.data[i]
+    return m
 
   def __sub__(self, other):
-    return self.sub(other)
+    assert self.rows == other.rows and self.cols == other.cols
+    m = Matrix(self.rows, self.cols)
+    for i in range(len(self.data)):
+      m.data[i] = self.data[i] - other.data[i]
+    return m
 
   def __mul__(self, other):
+    m = Matrix(self.rows, self.cols)
     if isinstance(other, Matrix):
-      return self.hadamard(other)
+      assert self.rows == other.rows and self.cols == other.cols
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] * other.data[i]
+      return m
     elif isinstance(other, float) or isinstance(other, int):
-      return self.scalarmul(other)
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] * other
+      return m
 
   def __rmul__(self, other):
     return self.__mul__(other)
 
   def __truediv__(self, other):
+    m = Matrix(self.rows, self.cols)
     if isinstance(other, Matrix):
-      return self.elementdiv(other)
+      assert self.rows == other.rows and self.cols == other.cols
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] / other.data[i]
+      return m
     elif isinstance(other, float) or isinstance(other, int):
-      return self.scalardiv(other)
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] / other
+      return m
 
