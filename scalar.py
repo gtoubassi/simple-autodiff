@@ -1,5 +1,4 @@
 import math
-from matrix import Matrix
 
 # TODO
 #
@@ -45,6 +44,12 @@ class Scalar:
     
   def abs(self):
     return self if self.value >= 0 else self.neg()
+  
+  def log(self):
+    z = Scalar(math.log(self.value))
+    z.parents.append((1.0 / self.value, self))
+    self.children.append((1.0 / self.value, z))
+    return z
     
   def __add__(self, other):
     other = other if isinstance(other, Scalar) else Scalar(other)
@@ -161,16 +166,8 @@ class Scalar:
   def __str__(self):
     return str(self.value) + 'n'
 
-def convert_to_scalar(m):
-  if isinstance(m, Scalar):
-    return m
-  if isinstance(m, Matrix):
-    return Matrix(m.rows, m.cols, lambda r, c: Scalar(m[r, c]))
-  return Scalar(m)
-  
-def convert_from_scalar(m):
-  if isinstance(m, Scalar):
-    return m.value
-  if isinstance(m, Matrix):
-    return Matrix(m.rows, m.cols, lambda r, c: m[r,c].value if isinstance(m[r,c], Scalar) else m[r,c])
-  return m
+def scalar_log(value):
+  if isinstance(value, Scalar):
+    return value.log()
+  else:
+    return math.log(value)

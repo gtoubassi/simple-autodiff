@@ -1,4 +1,5 @@
 from scalar import Scalar
+import scalar
 from matrix import Matrix
 import autodiff
 import math
@@ -88,6 +89,9 @@ def func_exp(x):
 def func_sigmoid(x):
   return 1.0 / (1.0 + math.exp(1)**(-x))
 
+def func_log(x):
+  return scalar.scalar_log(x)
+
 def test_derivative(func, low_range, high_range):
   for i in range(10):
     x = low_range + i * (high_range - low_range) / 10
@@ -125,6 +129,7 @@ def test_simple_derivative():
   test_derivative(func_neg_chain, -2.0, 2.0)
   test_derivative(func_exp, -2.0, 2.0)
   test_derivative(func_sigmoid, -2.0, 2.0)
+  test_derivative(func_log, .01, 2.0)
 
 def func_gradient_const(x):
   p = Matrix(3, 1, [[0], [0], [0]])

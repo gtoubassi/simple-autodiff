@@ -1,5 +1,5 @@
 from matrix import Matrix
-import scalar
+import matrix
 from scalar import Scalar
 
 epsilon = 1e-7
@@ -11,7 +11,7 @@ def _scalarize(m):
     return m.get(0,0)
   return m
 
-def finite_difference(func, params):
+def finite_difference(func, params, gradient_target = 0):
   global epsilon
 
   derivatives = []
@@ -20,25 +20,26 @@ def finite_difference(func, params):
   eval_f = _scalarize(func(*params))
   
   #compute f(x+h)
-  for i, param in enumerate(params):
-    if isinstance(param, Matrix):
-      assert param.cols == 1, "can only take finite diff gradients of scalar functions (no jacobians)"
-      deriv = [[0]*param.cols for x in range(param.rows)]
-      for r in range(param.rows):
-        for c in range(param.cols):
-          epsilon_param = Matrix(param.rows, param.cols, lambda row, col: param.get(row, col) + epsilon if row == r and col == c else param.get(row, col))
-          epsilon_params = list(params)
-          epsilon_params[i] = epsilon_param
-          eval_f_epsilon = _scalarize(func(*epsilon_params))
-          deriv[r][c] = (eval_f_epsilon - eval_f) / epsilon
-      deriv = Matrix(param.rows, param.cols, deriv)
-      derivatives.append(deriv)
-    else:
-      epsilon_params = list(params)
-      epsilon_params[i] += epsilon
-      eval_f_epsilon = func(*epsilon_params)
-      deriv = (eval_f_epsilon - eval_f) / epsilon
-      derivatives.append(deriv)
+  i = gradient_target
+  param = params[i]
+  if isinstance(param, Matrix):
+    assert param.cols == 1, "can only take finite diff gradients of scalar functions (no jacobians)"
+    deriv = [[0]*param.cols for x in range(param.rows)]
+    for r in range(param.rows):
+      for c in range(param.cols):
+        epsilon_param = Matrix(param.rows, param.cols, lambda row, col: param.get(row, col) + epsilon if row == r and col == c else param.get(row, col))
+        epsilon_params = list(params)
+        epsilon_params[i] = epsilon_param
+        eval_f_epsilon = _scalarize(func(*epsilon_params))
+        deriv[r][c] = (eval_f_epsilon - eval_f) / epsilon
+    deriv = Matrix(param.rows, param.cols, deriv)
+    derivatives.append(deriv)
+  else:
+    epsilon_params = list(params)
+    epsilon_params[i] += epsilon
+    eval_f_epsilon = func(*epsilon_params)
+    deriv = (eval_f_epsilon - eval_f) / epsilon
+    derivatives.append(deriv)
 
   if len(derivatives) == 1:
     derivatives = derivatives[0]
@@ -98,12 +99,12 @@ def forward_autodiff(result, var):
   return z
 
 def compute_gradients(func, args, gradient_target, reverse_mode = True):
-  args = list(map((lambda x: scalar.convert_to_scalar(x)), args))
+  args = list(map((lambda x: matrix.convert_to_scalar(x)), args))
   f_val = func(*args)
   if reverse_mode:
     f_grad = reverse_autodiff(f_val, args[gradient_target])
   else:
     f_grad = forward_autodiff(f_val, args[gradient_target])
-  f_val = scalar.convert_from_scalar(f_val)
-  f_grad = scalar.convert_from_scalar(f_grad)
+  f_val = matrix.convert_from_scalar(f_val)
+  f_grad = matrix.convert_from_scalar(f_grad)
   return f_val, f_grad, Scalar.opcount

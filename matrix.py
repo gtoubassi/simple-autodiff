@@ -1,3 +1,5 @@
+from scalar import Scalar
+import math
 
 class Matrix:
   
@@ -33,7 +35,20 @@ class Matrix:
       if abs(self.data[i] - other.data[i]) > tolerance:
         return False
     return True
-      
+  
+  def euclidean_norm(self):
+    total = 0
+    for i in range(len(self.data)):
+      total += self.data[i]*self.data[i]
+    return math.sqrt(total)
+
+  def gather_rows(self, indices):
+    m = Matrix(len(indices), self.cols)
+    for i in range(len(indices)):
+      for col in range(self.cols):
+        m[i, col] = self[indices[i], col]
+    return m
+
   def get(self, row, col):
     return self.data[row * self.cols + col]
   
@@ -62,8 +77,13 @@ class Matrix:
   
   def __getitem__(self, key):
     if isinstance(key, int):
-      assert self.cols == 1, "Must specify 2 arguments for indexing a non column matrix (%d, %d)" % (self.rows, self.cols)
-      return self.get(key, 0)
+      if self.cols == 1:
+        return self.get(key, 0)
+      else:
+        m = Matrix(1, self.cols)
+        for i in range(self.cols):
+          m[0, i] = self.get(key, i)
+        return m
     if isinstance(key, tuple):
       assert len(key) == 2, "Must specify 2 arguments for indexing a matrix (%d, %d)" % (self.rows, self.cols)
       return self.get(key[0], key[1])
@@ -81,18 +101,30 @@ class Matrix:
       raise TypeError
 
   def __add__(self, other):
-    assert self.rows == other.rows and self.cols == other.cols
-    m = Matrix(self.rows, self.cols)
-    for i in range(len(self.data)):
-      m.data[i] = self.data[i] + other.data[i]
-    return m
+    if isinstance(other, Matrix):
+      assert self.rows == other.rows and self.cols == other.cols
+      m = Matrix(self.rows, self.cols)
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] + other.data[i]
+      return m
+    elif isinstance(other, float) or isinstance(other, int) or isinstance(other, Scalar):
+      m = Matrix(self.rows, self.cols)
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] + other
+      return m
 
   def __sub__(self, other):
-    assert self.rows == other.rows and self.cols == other.cols
-    m = Matrix(self.rows, self.cols)
-    for i in range(len(self.data)):
-      m.data[i] = self.data[i] - other.data[i]
-    return m
+    if isinstance(other, Matrix):
+      assert self.rows == other.rows and self.cols == other.cols
+      m = Matrix(self.rows, self.cols)
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] - other.data[i]
+      return m
+    elif isinstance(other, float) or isinstance(other, int) or isinstance(other, Scalar):
+      m = Matrix(self.rows, self.cols)
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] - other
+      return m
 
   def __mul__(self, other):
     m = Matrix(self.rows, self.cols)
@@ -109,6 +141,13 @@ class Matrix:
   def __rmul__(self, other):
     return self.__mul__(other)
 
+  def __pow__(self, other):
+    if isinstance(other, float) or isinstance(other, int):
+      m = Matrix(self.rows, self.cols)
+      for i in range(len(self.data)):
+        m.data[i] = self.data[i] ** other
+      return m
+
   def __truediv__(self, other):
     m = Matrix(self.rows, self.cols)
     if isinstance(other, Matrix):
@@ -120,4 +159,20 @@ class Matrix:
       for i in range(len(self.data)):
         m.data[i] = self.data[i] / other
       return m
+
+def convert_to_scalar(m):
+  if isinstance(m, Scalar):
+    return m
+  if isinstance(m, Matrix):
+    return Matrix(m.rows, m.cols, lambda r, c: Scalar(m[r, c]))
+  if isinstance(m, float) or isinstance(m, int):
+    return Scalar(m)
+  return m
+
+def convert_from_scalar(m):
+  if isinstance(m, Scalar):
+    return m.value
+  if isinstance(m, Matrix):
+    return Matrix(m.rows, m.cols, lambda r, c: m[r,c].value if isinstance(m[r,c], Scalar) else m[r,c])
+  return m
 

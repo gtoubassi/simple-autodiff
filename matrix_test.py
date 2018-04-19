@@ -1,6 +1,6 @@
 from matrix import Matrix
 from scalar import Scalar
-import scalar
+import matrix
 
 num_tests = 0
 num_passed = 0
@@ -40,12 +40,32 @@ def test_add():
   m1plusm2 = m1 + m2
   test_assert(m1plusm2.compare(m1plusm2_correct))
 
+def test_add_scalars():
+  m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
+  m1plus2_correct = Matrix(3, 2, [[3, 4], [5, 6], [7, 8]])
+  m1plus2 = m1 + 2
+  test_assert(m1plus2.compare(m1plus2_correct))
+  m1plus2 = m1 + 2.0
+  test_assert(m1plus2.compare(m1plus2_correct))
+  m1plus2 = m1 + Scalar(2)
+  test_assert(m1plus2.compare(m1plus2_correct))
+
 def test_sub():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
   m2 = Matrix(3, 2, [[7, 9], [11, 13], [15, 17]])
   m1subm2_correct = Matrix(3, 2, [[-6, -7], [-8, -9], [-10, -11]])
   m1subm2 = m1 - m2
   test_assert(m1subm2.compare(m1subm2_correct))
+
+def test_sub_scalars():
+  m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
+  m1sub2_correct = Matrix(3, 2, [[-1, 0], [1, 2], [3, 4]])
+  m1sub2 = m1 - 2
+  test_assert(m1sub2.compare(m1sub2_correct))
+  m1sub2 = m1 - 2.0
+  test_assert(m1sub2.compare(m1sub2_correct))
+  m1sub2 = m1 - Scalar(2)
+  test_assert(m1sub2.compare(m1sub2_correct))
 
 def test_hadamard():
   m1 = Matrix(3, 2, [[1, 2], [3, 4], [5, 6]])
@@ -96,10 +116,10 @@ def test_transpose():
   test_assert(m1transpose.compare(m1transpose_correct))
 
 def test_with_scalars():
-  m1 = scalar.convert_to_scalar(Matrix(3, 2, [[1, 2], [3, 4], [5, 6]]))
-  m2 = scalar.convert_to_scalar(Matrix(2, 3, [[7, 8, 9], [10, 11, 12]]))
+  m1 = matrix.convert_to_scalar(Matrix(3, 2, [[1, 2], [3, 4], [5, 6]]))
+  m2 = matrix.convert_to_scalar(Matrix(2, 3, [[7, 8, 9], [10, 11, 12]]))
   m1mulm2 = m1.matmul(m2)
-  m1mulm2_correct = scalar.convert_to_scalar(Matrix(3, 3, [[1*7 + 2*10, 1*8 + 2*11, 1*9 + 2*12], [3*7 + 4*10, 3*8 + 4*11, 3*9 + 4*12], [5*7 + 6*10, 5*8 + 6*11, 5*9 + 6*12]]))
+  m1mulm2_correct = matrix.convert_to_scalar(Matrix(3, 3, [[1*7 + 2*10, 1*8 + 2*11, 1*9 + 2*12], [3*7 + 4*10, 3*8 + 4*11, 3*9 + 4*12], [5*7 + 6*10, 5*8 + 6*11, 5*9 + 6*12]]))
   test_assert(m1mulm2.compare(m1mulm2_correct))
 
 def test_operator_index():
@@ -125,13 +145,33 @@ def test_operator_index():
   test_assert(m[1,1] == 6)
   test_assert(m[1,2] == 14.3)
   
+  m1 = matrix.convert_to_scalar(Matrix(3, 2, [[1, 2], [3, 4], [5, 6]]))
+  mslice = m1[1]
+  mslice_correct = Matrix(1, 2, [[3, 4]])
+  test_assert(mslice.compare(mslice_correct))
+  mslice = m1[2]
+  mslice_correct = Matrix(1, 2, [[5, 6]])
+  test_assert(mslice.compare(mslice_correct))
+
+def test_gather_rows():
+  m1 = Matrix(4, 2, [[1, 2], [3, 4], [5, 6], [7, 8]])
+  gathered = m1.gather_rows((0,3))
+  gathered_correct = Matrix(2, 2, [[1, 2], [7, 8]])
+  test_assert(gathered.compare(gathered_correct))
+
+  gathered = m1.gather_rows((1,))
+  gathered_correct = Matrix(1, 2, [[3, 4]])
+  test_assert(gathered.compare(gathered_correct))
+
 def main():
   global num_tests, num_passed
 
   test_operator_index()
   test_initialization()
   test_add()
+  test_add_scalars()
   test_sub()
+  test_sub_scalars()
   test_hadamard()
   test_scalarmul()
   test_elementdiv()
@@ -139,6 +179,7 @@ def main():
   test_matmul()
   test_transpose()
   test_with_scalars()
+  test_gather_rows()
 
   if num_tests > num_passed:
     print("%d FAILED!" % (num_tests - num_passed))

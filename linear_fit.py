@@ -38,6 +38,7 @@ def main():
 
   print("Final m=%f, b=%f" % (params[0], params[1]))  
   print("Compared to target m=%f, b=%f" % (target_m, target_b))  
+
 if __name__ == "__main__":
   main()
 
