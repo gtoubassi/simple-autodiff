@@ -1,42 +1,45 @@
 import numpy as np
-import imageio
-from matrix import Matrix
 import random
+from matrix import Matrix
 import autodiff
 import math
 import scalar
+from tensorflow.examples.tutorials.mnist import input_data
+import skimage.transform
 
-imdim = 7
+def load_mnist_dataset(orig_images, orig_labels):
+  idxs = []
+  new_labels = []
+  for i in range(orig_labels.shape[0]):
+    if orig_labels[i,0] == 1:
+      new_labels.append([0.0])
+      idxs.append(i)
+    elif orig_labels[i,1] == 1:
+      new_labels.append([1.0])
+      idxs.append(i)
 
-def image_to_matrix(image, m, imrow):
-  for row in range(image.shape[0]):
-    for col in range(image.shape[1]):
-      m[imrow, row*image.shape[0] + col] = image[col, row]
-  return m
+  train_xs = orig_images.take(idxs, axis=0)
+  train_ys = np.asarray(new_labels)
 
-def get_dataset(image, labels):
-  w = image.shape[0]
-  h = image.shape[1]
+  # resize
+  resized = np.zeros((train_xs.shape[0], 7, 7))
+  for i in range(train_xs.shape[0]):
+    fullim = train_xs[i].copy()
+    fullim.resize((28,28))
+    resized[i] = skimage.transform.downscale_local_mean(fullim, (4, 4))
 
-  # count how many 0s and 1s?
-  num_final = sum(map(lambda x: 1 if x < 50 else 0, labels))
-  num_final = min(10*32, num_final)
+  resized.resize(resized.shape[0], 7*7)
+  train_xs = resized
+  
+  train_xs = Matrix(train_xs.shape[0], train_xs.shape[1], train_xs.tolist())
+  train_ys = Matrix(train_ys.shape[0], train_ys.shape[1], train_ys.tolist())
+  return train_xs, train_ys
 
-  ys = Matrix(num_final, 1)
-  xs = Matrix(num_final, imdim*imdim + 1, 1.0)  # +1 column and the 1.0 default for the bias term
-
-  i = 0
-  n = 0
-  for y in range(0, h, imdim):
-    for x in range(0, w, imdim):
-      if labels[i] < 50:
-        digit_image = (image[y:(y+imdim), x:(x+imdim)].astype(float) / 255.0) ** 2
-        image_to_matrix(digit_image, xs, n)
-        ys[n] = labels[i] - 48
-        n += 1
-        if n == num_final:
-          return xs, ys
-      i += 1
+def load_mnist():
+  mn = input_data.read_data_sets("MNIST_data/", one_hot=True)
+  train_xs, train_ys = load_mnist_dataset(mn.train._images, mn.train._labels)
+  test_xs, test_ys = load_mnist_dataset(mn.test._images, mn.test._labels)
+  return train_xs, train_ys, test_xs, test_ys
 
 def dump_data(xs, ys, limit = 250):
   for i in range(min(xs.rows, limit)):
@@ -58,8 +61,6 @@ def linear_model(params, x):
 def error_linear_model(params, x, y_target):
   y = linear_model(params, x)
   return -(y_target * scalar.scalar_log(y + 1e-8) + (1-y_target) * scalar.scalar_log(1 - y + 1e-8))
-  # −(yln(p)+(1−y)ln(1−p))
-  #return (y - y_target)**2
 
 def error_batch_linear_model(params, xs, ys):
   total_error = 0
@@ -77,22 +78,23 @@ def eval_model(params, xs, ys):
       correct += 1
   return correct / xs.rows
 
-def train_linear_model(xs, ys):
-  params = Matrix(xs.cols, 1, lambda r, c: random.gauss(0,.1))
+def train_linear_model(xs, ys, test_xs, test_ys):
+  params = Matrix(xs.cols, 1)
 
   batch_size = 32
 
-  print('Accuracy', eval_model(params, xs, ys))
+  print('Initial accuracy', eval_model(params, test_xs, test_ys))
   
   batch_indices = [i for i in range(xs.rows)]
   
   momentum = Matrix(xs.cols, 1)
   
-  step_size = .01
-  for epoch in range(1000):
+  step_size = .5
+  for epoch in range(5):
     random.shuffle(batch_indices)
-    for i in range(0, len(batch_indices), batch_size):
-      batch = batch_indices[i:(i + batch_size)]
+    num_batches = len(batch_indices) // batch_size
+    for i in range(num_batches):
+      batch = batch_indices[i*batch_size:(i*batch_size + batch_size)]
       
       batch_xs = xs.gather_rows(batch)
       batch_ys = ys.gather_rows(batch)
@@ -100,35 +102,20 @@ def train_linear_model(xs, ys):
       f_val, f_grad, opcount = autodiff.compute_gradients(error_batch_linear_model, [params, batch_xs, batch_ys], 0, reverse_mode = True)
       #f_val, f_grad = autodiff.f_d(error_batch_linear_model, [params, batch_xs, batch_ys], 0)
       
-      momentum = 0.9*momentum + f_grad * -step_size
-      params += momentum
-      #print("Epoch %d, Batch %d Error %f  e_grad_norm=%f (opcount=%d)" % (epoch, i + 1, f_val, f_grad.euclidean_norm(), opcount))
+      #momentum = 0.9*momentum + f_grad * -step_size
+      params += f_grad * -step_size
+      if (i + 1) % 10 == 0:
+        print("Epoch %d, Batch %d (of %d) Error %f  e_grad_norm=%f (opcount=%d)" % (epoch + 1, i + 1, num_batches, f_val, f_grad.euclidean_norm(), opcount))
 
-    #if (epoch + 1) % 25 == 0:
-    #  step_size /= 2
-    #  print('step:', step_size)
-
-    f_val, f_grad, _ = autodiff.compute_gradients(error_batch_linear_model, [params, xs, ys], 0, reverse_mode = True)
-    accuracy = eval_model(params, xs, ys)
-    print("Epoch %d accuracy %f Error %f e_grad_norm=%f" % (epoch, accuracy, f_val, f_grad.euclidean_norm()))
+    accuracy = eval_model(params, test_xs, test_ys)
+    print("Epoch %d accuracy %f" % (epoch + 1, accuracy))
 
 def main():
   print("Loading data...")
-  train_image = imageio.imread('data/train_digits%dx%d.png' % (imdim, imdim))
-  test_image = imageio.imread('data/test_digits%dx%d.png' % (imdim, imdim))
-
-  with open("data/train_digits.txt", "rb") as f:
-    train_labels = f.read()
-  with open("data/test_digits.txt", "rb") as f:
-    test_labels = f.read()
-  
-  train_xs, train_ys = get_dataset(train_image, train_labels)
-  test_xs, test_ys = get_dataset(test_image, test_labels)
+  train_xs, train_ys, test_xs, test_ys = load_mnist()
   
   print("Training")
-  train_linear_model(train_xs, train_ys)
-  #print(train_xs.rows, test_ys.rows)
-  #dump_data(test_xs, test_ys)
+  train_linear_model(train_xs, train_ys, test_xs, test_ys)
 
 
 if __name__ == "__main__":
