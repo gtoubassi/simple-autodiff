@@ -7,20 +7,10 @@ import scalar
 from tensorflow.examples.tutorials.mnist import input_data
 import skimage.transform
 
-def load_mnist_dataset(orig_images, orig_labels):
-  idxs = []
-  new_labels = []
-  for i in range(orig_labels.shape[0]):
-    if orig_labels[i,0] == 1:
-      new_labels.append([0.0])
-      idxs.append(i)
-    elif orig_labels[i,1] == 1:
-      new_labels.append([1.0])
-      idxs.append(i)
-
-  train_xs = orig_images.take(idxs, axis=0)
-  train_ys = np.asarray(new_labels)
-
+def load_mnist_dataset(train_xs, train_ys):
+  #train_xs = train_xs[:5000,:]
+  #train_ys = train_ys[:5000,:]
+  
   # resize
   resized = np.zeros((train_xs.shape[0], 7, 7))
   for i in range(train_xs.shape[0]):
@@ -41,47 +31,54 @@ def load_mnist():
   test_xs, test_ys = load_mnist_dataset(mn.test._images, mn.test._labels)
   return train_xs, train_ys, test_xs, test_ys
 
-def dump_data(xs, ys, limit = 250):
-  for i in range(min(xs.rows, limit)):
-    print('Label', ys[i])
-    for row in range(imdim):
-      for col in range(imdim):
-        print('*' if xs[i, col*imdim + row] < .7 else ' ', end='')
-      print()
-    print()
-
-def sigmoid(x):
-  e = math.exp(1)
-  return 1 / (1 + e**(-x))
+def softmax(x):
+  m = x.apply_copy(lambda s: math.exp(1)**s)
+  s = m.reduce_sum()
+  return m / s
 
 def linear_model(params, x):
-  dot = x.matmul(params)[0]
-  return sigmoid(dot)
+  oldr = params.rows
+  oldc = params.cols
+  params.rows = 10
+  params.cols = oldr // 10
+  W = params
+  y = W.matmul(x)
+  y = softmax(y)
+  params.rows = oldr
+  params.cols = oldc
+  return y
 
 def error_linear_model(params, x, y_target):
   y = linear_model(params, x)
-  return -(y_target * scalar.scalar_log(y + 1e-8) + (1-y_target) * scalar.scalar_log(1 - y + 1e-8))
+  loss = 0
+  for r in range(y.rows):
+    loss += -y_target[r] * scalar.scalar_log(y[r] + 1e-8)
+  return loss
 
 def error_batch_linear_model(params, xs, ys):
   total_error = 0
   for i in range(xs.rows):
-    e = error_linear_model(params, xs[i], ys[i])
-    total_error += e
+    total_error += error_linear_model(params, xs[i].transpose(), ys[i].transpose())
   return total_error / len(range(xs.rows))
 
 def eval_model(params, xs, ys):
   correct = 0
   for i in range(xs.rows):
-    prediction = linear_model(params, xs[i])
-    predicted_label = 1 if prediction > .5 else 0
-    if predicted_label == ys[i]:
+    prediction = linear_model(params, xs[i].transpose())
+    max_value = -1
+    predicted_label = 0
+    for j in range(prediction.rows):
+      if prediction[j] > max_value:
+        max_value = prediction[j]
+        predicted_label = j
+    if ys[i,predicted_label] == 1.0:
       correct += 1
   return correct / xs.rows
 
 def train_linear_model(xs, ys, test_xs, test_ys):
-  params = Matrix(xs.cols, 1)
+  params = Matrix(xs.cols * ys.cols, 1)
 
-  batch_size = 32
+  batch_size = 100
 
   print('Initial accuracy', eval_model(params, test_xs, test_ys))
 
@@ -110,7 +107,7 @@ def train_linear_model(xs, ys, test_xs, test_ys):
     accuracy = eval_model(params, test_xs, test_ys)
     print("Epoch %d accuracy %f" % (epoch + 1, accuracy))
 
-def main():
+def main():  
   print("Loading data...")
   train_xs, train_ys, test_xs, test_ys = load_mnist()
   

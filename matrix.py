@@ -28,10 +28,12 @@ class Matrix:
       m.data[i] = self.data[i]
     return m
 
-  def reshape_inplace(self, new_rows, new_cols):
+  def reshape(self, new_rows, new_cols):
     assert self.rows * self.cols == new_rows * new_cols
-    self.rows = new_rows
-    self.cols = new_cols
+    m = self.copy()
+    m.rows = new_rows
+    m.cols = new_cols
+    return m
 
   def _apply(self, func):
     for i in range(len(self.data)):
@@ -175,7 +177,7 @@ class Matrix:
       for i in range(len(self.data)):
         m.data[i] = self.data[i] / other.data[i]
       return m
-    elif isinstance(other, float) or isinstance(other, int):
+    elif isinstance(other, float) or isinstance(other, int) or isinstance(other, Scalar):
       for i in range(len(self.data)):
         m.data[i] = self.data[i] / other
       return m
