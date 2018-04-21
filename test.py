@@ -193,12 +193,40 @@ def test_gradients():
   test_gradient(func_gradient_square, -1.0, 2.0)
   test_gradient(func_gradient_scalarmul, -1.0, 2.0)
 
+def func_jacobian_matmul(x):
+  p = Matrix(3, 3, [[3.0, 4.5, 11.5], [4.0, 1.5, 9], [5.0, 1, 2]])
+  return p.matmul(x)
+
+def func_jacobian_const(x):
+  return Matrix(3, 1, [[3.0], [4.5], [11.5]]) + x - x
+  
+def test_jacobians():
+  x = Matrix(3, 1, [[4.0], [7.0], [2.0]])
+  correct = Matrix(3, 3, [[3.0, 4.5, 11.5], [4.0, 1.5, 9], [5.0, 1, 2]]).transpose()
+
+  _, jacobian = autodiff.finite_difference(func_jacobian_matmul, [x])
+  test_assert(correct.compare(jacobian, 1e-3))
+  _, jacobian, _ = autodiff.compute_gradients(func_jacobian_matmul, [x], 0, reverse_mode = True)
+  test_assert(correct.compare(jacobian, 1e-3))
+  _, jacobian, _ = autodiff.compute_gradients(func_jacobian_matmul, [x], 0, reverse_mode = False)
+  test_assert(correct.compare(jacobian, 1e-3))
+
+  correct = Matrix(1, 3, [[0, 0, 0]])
+  x = 2.5
+  _, jacobian = autodiff.finite_difference(func_jacobian_const, [x])
+  test_assert(correct.compare(jacobian, 1e-3))
+  _, jacobian, _ = autodiff.compute_gradients(func_jacobian_const, [x], 0, reverse_mode = True)
+  test_assert(correct.compare(jacobian, 1e-3))
+  _, jacobian, _ = autodiff.compute_gradients(func_jacobian_const, [x], 0, reverse_mode = False)
+  test_assert(correct.compare(jacobian, 1e-3))
+  
 def main():
   global num_tests, num_passed
 
   test_simple()
   test_simple_derivative()
   test_gradients()
+  test_jacobians()
 
   if num_tests > num_passed:
     print("%d FAILED!" % (num_tests - num_passed))

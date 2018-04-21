@@ -17,6 +17,10 @@ class Matrix:
           self.data[r * self.cols + c] = initializer[r][c]
     elif isinstance(initializer, float) or isinstance(initializer, int):
       self.data = [initializer] * (rows * cols)
+    elif isinstance(initializer, Scalar):
+      # For now just allow wrapping in a 1x1, we need to decide copy semantics.
+      assert rows == 1 and cols == 1
+      self.data[0] = initializer
     
   def copy(self):
     m = Matrix(self.rows, self.cols)
@@ -24,10 +28,21 @@ class Matrix:
       m.data[i] = self.data[i]
     return m
 
-  def apply(self, func):
+  def reshape_inplace(self, new_rows, new_cols):
+    assert self.rows * self.cols == new_rows * new_cols
+    self.rows = new_rows
+    self.cols = new_cols
+
+  def _apply(self, func):
     for i in range(len(self.data)):
       func(self.data[i])
-    
+  
+  def apply_copy(self, func):
+    m = Matrix(self.rows, self.cols)
+    for i in range(len(self.data)):
+      m.data[i] = func(self.data[i])
+    return m
+  
   def compare(self, other, tolerance = 0.0):
     if self.rows != other.rows or self.cols != other.cols:
       return False
@@ -92,8 +107,13 @@ class Matrix:
 
   def __setitem__(self, key, value):
     if isinstance(key, int):
-      assert self.cols == 1, "Must specify 2 arguments for indexing a non column matrix (%d, %d)" % (self.rows, self.cols)
-      self.data[key * self.cols + 0] = value
+      if isinstance(value, Matrix):
+        assert self.cols == value.cols and value.rows == 1
+        for c in range(value.cols):
+          self.data[key * self.cols + c] = value[0, c]
+      else:
+        assert self.cols == 1, "Must specify 2 arguments for indexing a non column matrix (%d, %d)" % (self.rows, self.cols)
+        self.data[key * self.cols + 0] = value
     elif isinstance(key, tuple):
       assert len(key) == 2, "Must specify 2 arguments for indexing a matrix (%d, %d)" % (self.rows, self.cols)
       self.data[key[0] * self.cols + key[1]] = value

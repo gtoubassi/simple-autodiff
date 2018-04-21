@@ -163,6 +163,13 @@ def test_gather_rows():
   gathered_correct = Matrix(1, 2, [[3, 4]])
   test_assert(gathered.compare(gathered_correct))
 
+def test_assign_rows():
+  m1 = Matrix(4, 2, [[1, 2], [3, 4], [5, 6], [7, 8]])
+  row = Matrix(1, 2, [[100,200]])
+  m1[2] = row
+  correct = Matrix(4, 2, [[1, 2], [3, 4], [100, 200], [7, 8]])
+  test_assert(correct.compare(m1))
+
 def main():
   global num_tests, num_passed
 
@@ -180,6 +187,7 @@ def main():
   test_transpose()
   test_with_scalars()
   test_gather_rows()
+  test_assign_rows()
 
   if num_tests > num_passed:
     print("%d FAILED!" % (num_tests - num_passed))

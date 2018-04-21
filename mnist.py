@@ -84,7 +84,7 @@ def train_linear_model(xs, ys, test_xs, test_ys):
   batch_size = 32
 
   print('Initial accuracy', eval_model(params, test_xs, test_ys))
-  
+
   batch_indices = [i for i in range(xs.rows)]
   
   momentum = Matrix(xs.cols, 1)

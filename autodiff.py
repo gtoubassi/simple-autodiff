@@ -2,7 +2,6 @@ from matrix import Matrix
 import matrix
 from scalar import Scalar
 
-epsilon = 1e-7
 
 def _scalarize(m):
   if isinstance(m, Matrix):
@@ -11,91 +10,92 @@ def _scalarize(m):
     return m.get(0,0)
   return m
 
-def finite_difference(func, params, gradient_target = 0):
-  global epsilon
+def _matricize(s):
+  if isinstance(s, Matrix):
+    return s
+  return Matrix(1, 1, s)
 
-  derivatives = []
+def is_scalarish(val):
+  return isinstance(val, float) or isinstance(val, int) or isinstance(val, Scalar)
+
+def finite_difference(func, params, gradient_target = 0):
+  epsilon = 1e-7
 
   # compute f(x)
-  eval_f = _scalarize(func(*params))
+  result = func(*params)
+
+  var = params[gradient_target]
+
+  result_was_scalar = is_scalarish(result)
+  var_was_scalar = is_scalarish(var)
+  var = _matricize(var)
+  result = _matricize(result)
+
+  assert isinstance(var, Matrix) and var.cols == 1
+  assert isinstance(result, Matrix) and result.cols == 1
   
-  #compute f(x+h)
-  i = gradient_target
-  param = params[i]
-  if isinstance(param, Matrix):
-    assert param.cols == 1, "can only take finite diff gradients of scalar functions (no jacobians)"
-    deriv = [[0]*param.cols for x in range(param.rows)]
-    for r in range(param.rows):
-      for c in range(param.cols):
-        epsilon_param = Matrix(param.rows, param.cols, lambda row, col: param.get(row, col) + epsilon if row == r and col == c else param.get(row, col))
-        epsilon_params = list(params)
-        epsilon_params[i] = epsilon_param
-        eval_f_epsilon = _scalarize(func(*epsilon_params))
-        deriv[r][c] = (eval_f_epsilon - eval_f) / epsilon
-    deriv = Matrix(param.rows, param.cols, deriv)
-    derivatives.append(deriv)
-  else:
-    epsilon_params = list(params)
-    epsilon_params[i] += epsilon
-    eval_f_epsilon = func(*epsilon_params)
-    deriv = (eval_f_epsilon - eval_f) / epsilon
-    derivatives.append(deriv)
+  z = Matrix(var.rows, result.rows)
+  for r in range(z.rows):
+    for c in range(z.cols):
+      epsilon_var = var.copy()
+      epsilon_var[r] += epsilon
+      epsilon_params = list(params)
+      epsilon_params[gradient_target] = _scalarize(epsilon_var) if var_was_scalar else epsilon_var
+      result_epsilon = _matricize(func(*epsilon_params))
+      z[r] = ((result_epsilon - result) / epsilon).transpose()
 
-  if len(derivatives) == 1:
-    derivatives = derivatives[0]
+  if result_was_scalar and z.rows == z.cols == 1:
+    z = z[0, 0]
+    result = result[0, 0]
 
-  return (eval_f, derivatives) 
-
+  return (result, z) 
 
 def reverse_autodiff(result, var):
   Scalar.opcount = 0
 
-  if isinstance(result, Matrix):
-    result.apply(lambda x: x._reset_grad())
-    for i in range(len(result.data)):
-      result.data[i].grad_value = 1
-  else:
-    result._reset_grad()
-    result.grad_value = 1
-  
-  if isinstance(var, Matrix):
-    var.apply(lambda x: x._reset_grad())
-    var.apply(lambda x: x._reverse_autodiff())
-    z = Matrix(var.rows, 1)
-    for r in range(z.rows):
-      z.data[r * z.cols + 0] = var.get(r, 0).grad_value
-  else:
-    var._reset_grad()
-    z = var._reverse_autodiff()    
-  # Todo, we are assuming a true gradient, no jacobians here
-  return z
+  result_was_scalar = is_scalarish(result)
+  var = _matricize(var)
+  result = _matricize(result)
 
-  def forward_autodiff(self, var):
-    Scalar.opcount = 0
-    return z
+  assert isinstance(var, Matrix) and var.cols == 1
+  assert isinstance(result, Matrix) and result.cols == 1
+
+  z = Matrix(var.rows, result.rows)
+  for r in range(z.cols):
+    result._apply(lambda x: x._reset_grad())
+    result[r].grad_value = 1
+
+    var._apply(lambda x: x._reset_grad())
+    var._apply(lambda x: x._reverse_autodiff())
+    for c in range(var.rows):
+      z[c,r] = var[c].grad_value
   
+  if result_was_scalar and z.rows == z.cols == 1:
+    z = z[0,0]
+
+  return z
 
 def forward_autodiff(result, var):
   Scalar.opcount = 0
 
-  # Todo, we are assuming a true gradient, no jacobians here
-  if isinstance(result, Matrix):
-    assert result.rows == 1 and result.cols == 1, 'no jacobian support'
-    result = result[0,0]
+  result_was_scalar = is_scalarish(result)
+  var = _matricize(var)
+  result = _matricize(result)
+
+  assert isinstance(var, Matrix) and var.cols == 1
+  assert isinstance(result, Matrix) and result.cols == 1
   
-  if isinstance(var, Matrix):
-    z = Matrix(var.rows, 1)
-    for r in range(z.rows):
-      result._reset_grad()
-      var.apply(lambda x: x._reset_grad())
-      var.data[r * z.cols + 0].grad_value = 1
-      z.data[r * z.cols + 0] = result._forward_autodiff()
-  else:
-    result._reset_grad()
-    var._reset_grad()
-    var.grad_value = 1
-    z = result._forward_autodiff()
-    
+  z = Matrix(var.rows, result.rows)
+  for r in range(z.rows):
+    result._apply(lambda x: x._reset_grad())
+    var._apply(lambda x: x._reset_grad())
+    var[r].grad_value = 1
+    for c in range(result.rows):
+      z[r, c] = result[c, 0]._forward_autodiff()
+  
+  if result_was_scalar and z.rows == z.cols == 1:
+    z = z[0,0]
+
   return z
 
 def compute_gradients(func, args, gradient_target, reverse_mode = True):
