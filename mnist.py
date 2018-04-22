@@ -6,6 +6,7 @@ import math
 import scalar
 from tensorflow.examples.tutorials.mnist import input_data
 import skimage.transform
+import time
 
 def load_mnist_dataset(train_xs, train_ys):
   #train_xs = train_xs[:5000,:]
@@ -37,16 +38,8 @@ def softmax(x):
   return m / s
 
 def linear_model(params, x):
-  oldr = params.rows
-  oldc = params.cols
-  params.rows = 10
-  params.cols = oldr // 10
-  W = params
-  y = W.matmul(x)
-  y = softmax(y)
-  params.rows = oldr
-  params.cols = oldc
-  return y
+  W = params.reshape(10, params.rows // 10)
+  return = softmax(W.matmul(x))
 
 def error_linear_model(params, x, y_target):
   y = linear_model(params, x)
@@ -90,6 +83,7 @@ def train_linear_model(xs, ys, test_xs, test_ys):
   for epoch in range(5):
     random.shuffle(batch_indices)
     num_batches = len(batch_indices) // batch_size
+    start = time.time()
     for i in range(num_batches):
       batch = batch_indices[i*batch_size:(i*batch_size + batch_size)]
       
@@ -102,7 +96,9 @@ def train_linear_model(xs, ys, test_xs, test_ys):
       #momentum = 0.9*momentum + f_grad * -step_size
       params += f_grad * -step_size
       if (i + 1) % 10 == 0:
-        print("Epoch %d, Batch %d (of %d) Error %f  e_grad_norm=%f (opcount=%d)" % (epoch + 1, i + 1, num_batches, f_val, f_grad.euclidean_norm(), opcount))
+        duration = time.time() - start
+        start = time.time()
+        print("Epoch %d, Batch %d (of %d) Error %f  e_grad_norm=%f (opcount=%d) (%fs)" % (epoch + 1, i + 1, num_batches, f_val, f_grad.euclidean_norm(), opcount, duration))
 
     accuracy = eval_model(params, test_xs, test_ys)
     print("Epoch %d accuracy %f" % (epoch + 1, accuracy))
